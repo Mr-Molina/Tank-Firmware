@@ -9,21 +9,20 @@
 #define SMOOTH_ACCEL_DELAY 20
 
 // Motor calibration factors (adjust these to match your specific motors)
-#define RL_CALIBRATION 1.0
-#define RR_CALIBRATION 1.0
+#define LEFT_CALIBRATION 1.0
+#define RIGHT_CALIBRATION 1.0
 
 // Motor pin definitions (adjust these to match your wiring)
-#define M_RL_A_PIN 5  // Rear Left motor pin A
-#define M_RL_B_PIN 6  // Rear Left motor pin B
-#define M_RR_A_PIN 9  // Rear Right motor pin A
-#define M_RR_B_PIN 10 // Rear Right motor pin B
+#define M_LEFT_A_PIN 5   // Left motor pin A
+#define M_LEFT_B_PIN 6   // Left motor pin B
+#define M_RIGHT_A_PIN 9  // Right motor pin A
+#define M_RIGHT_B_PIN 10 // Right motor pin B
 
 /**
- * MotionMotors class for controlling a vehicle with 2 rear motors
+ * MotionMotors class for controlling a vehicle with 2 motors
  * 
- * This class provides high-level movement functions for a tank-like vehicle
- * with two rear motors. It includes smooth acceleration/deceleration and
- * motor calibration to ensure straight movement.
+ * This class provides independent control of left and right motors
+ * with calibration and smooth acceleration/deceleration capabilities.
  */
 class MotionMotors {
 public:
@@ -40,54 +39,50 @@ public:
     void begin();
 
     /**
-     * High-level movement functions
+     * Independent motor control functions
      */
     
     /**
-     * Moves the vehicle straight forward
-     * 
-     * Both rear wheels rotate forward at the same speed, causing the vehicle to move
-     * in a straight line forward. The calibration factors ensure that both wheels
-     * move at the same effective speed even if the motors have slight differences.
+     * Drives the left motor forward with optional smooth acceleration
      * 
      * @param power Motor power level (0-255)
      * @param smooth Whether to use smooth acceleration (if enabled globally)
      */
-    void forward(uint8_t power, bool smooth = true);
+    void leftForward(uint8_t power, bool smooth = true);
 
     /**
-     * Moves the vehicle straight backward
-     * 
-     * Both rear wheels rotate backward at the same speed, causing the vehicle to move
-     * in a straight line backward. The calibration factors ensure that both wheels
-     * move at the same effective speed even if the motors have slight differences.
+     * Drives the left motor backward with optional smooth acceleration
      * 
      * @param power Motor power level (0-255)
      * @param smooth Whether to use smooth acceleration (if enabled globally)
      */
-    void backward(uint8_t power, bool smooth = true);
+    void leftBackward(uint8_t power, bool smooth = true);
 
     /**
-     * Rotates the vehicle to the left (counter-clockwise) in place
-     * 
-     * This creates a pivot turn where the vehicle rotates around its center.
-     * The left wheel rotates backward while the right wheel rotates forward,
-     * causing the vehicle to spin in place counter-clockwise.
+     * Drives the right motor forward with optional smooth acceleration
      * 
      * @param power Motor power level (0-255)
+     * @param smooth Whether to use smooth acceleration (if enabled globally)
      */
-    void left(uint8_t power);
+    void rightForward(uint8_t power, bool smooth = true);
 
     /**
-     * Rotates the vehicle to the right (clockwise) in place
-     * 
-     * This creates a pivot turn where the vehicle rotates around its center.
-     * The right wheel rotates backward while the left wheel rotates forward,
-     * causing the vehicle to spin in place clockwise.
+     * Drives the right motor backward with optional smooth acceleration
      * 
      * @param power Motor power level (0-255)
+     * @param smooth Whether to use smooth acceleration (if enabled globally)
      */
-    void right(uint8_t power);
+    void rightBackward(uint8_t power, bool smooth = true);
+
+    /**
+     * Stops the left motor
+     */
+    void leftStop();
+
+    /**
+     * Stops the right motor
+     */
+    void rightStop();
 
     /**
      * Stops all motors immediately
@@ -116,42 +111,42 @@ private:
     // Low-level motor control functions
     
     /**
-     * Drives the Rear Left motor forward
+     * Drives the left motor forward
      * 
      * @param power Motor power level (0-255)
      */
-    void RL_forward(uint8_t power);
+    void left_forward(uint8_t power);
 
     /**
-     * Drives the Rear Left motor backward
+     * Drives the left motor backward
      * 
      * @param power Motor power level (0-255)
      */
-    void RL_backward(uint8_t power);
+    void left_backward(uint8_t power);
 
     /**
-     * Stops the Rear Left motor
+     * Stops the left motor
      */
-    void RL_Stop();
+    void left_stop();
 
     /**
-     * Drives the Rear Right motor forward
+     * Drives the right motor forward
      * 
      * @param power Motor power level (0-255)
      */
-    void RR_forward(uint8_t power);
+    void right_forward(uint8_t power);
 
     /**
-     * Drives the Rear Right motor backward
+     * Drives the right motor backward
      * 
      * @param power Motor power level (0-255)
      */
-    void RR_backward(uint8_t power);
+    void right_backward(uint8_t power);
 
     /**
-     * Stops the Rear Right motor
+     * Stops the right motor
      */
-    void RR_Stop();
+    void right_stop();
 
     // Smooth acceleration/deceleration functions
     
@@ -191,9 +186,11 @@ private:
                           void (MotionMotors::*targetFunction)(uint8_t), uint8_t targetPower,
                           uint8_t steps = SMOOTH_ACCEL_STEPS, uint8_t delayMs = SMOOTH_ACCEL_DELAY);
 
-    // Member variables for tracking current movement state
-    void (MotionMotors::*currentMoveFunction)(uint8_t);
-    uint8_t currentPower;
+    // Member variables for tracking current movement state for each motor
+    void (MotionMotors::*leftCurrentFunction)(uint8_t);
+    void (MotionMotors::*rightCurrentFunction)(uint8_t);
+    uint8_t leftCurrentPower;
+    uint8_t rightCurrentPower;
     bool smoothEnabled;
 };
 
