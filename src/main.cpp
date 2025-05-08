@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "TankController.h"
+#include "esp_task_wdt.h"
 
 // Configuration flags
 #define EVENTS 1
@@ -24,6 +25,9 @@
 #define MAX_MOTOR_SPEED 255
 #define TURN_SPEED_FACTOR 0.7
 
+// Watchdog timeout in seconds
+#define WDT_TIMEOUT 5
+
 // Create controller instance
 TankController tank(
     // PS4 controller config
@@ -39,8 +43,16 @@ TankController tank(
 void setup()
 {
     Serial.begin(115200);
+    Serial.println("Starting initialization...");
+    
+    // Initialize watchdog with timeout
+    Serial.println("Setting up watchdog timer...");
+    esp_task_wdt_init(WDT_TIMEOUT, true);
+    esp_task_wdt_add(NULL);
+    Serial.println("Watchdog timer initialized");
+    
     Serial.println("Initializing PS4 Controller and Motors...");
-
+    
     // Initialize the tank controller
     tank.begin();
 
@@ -49,6 +61,9 @@ void setup()
 
 void loop()
 {
+    // Reset watchdog timer
+    esp_task_wdt_reset();
+    
     // Update controller and handle all motor control
     // The timing is now handled internally by the TankController class
     tank.update();

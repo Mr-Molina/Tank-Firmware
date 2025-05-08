@@ -80,6 +80,9 @@ void TankController::update() {
     // Get current controller state
     PS4Remote::ControllerState state = ps4.getState();
     
+    // Update motor acceleration (non-blocking)
+    motors.updateAcceleration();
+    
     // Only update motor control at the specified interval
     if (isTimeToUpdate()) {
         // Control motors based on joystick input if controller is connected

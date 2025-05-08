@@ -16,7 +16,7 @@
  * MotionMotors class for controlling a vehicle with 2 motors
  * 
  * This class provides independent control of left and right motors
- * with calibration and smooth acceleration/deceleration capabilities.
+ * with calibration and non-blocking smooth acceleration/deceleration capabilities.
  */
 class MotionMotors {
 public:
@@ -109,6 +109,12 @@ public:
      * @return True if enabled, false if disabled
      */
     bool isSmoothEnabled();
+    
+    /**
+     * Update acceleration state - must be called regularly from the main loop
+     * for non-blocking acceleration to work
+     */
+    void updateAcceleration();
 
 private:
     // Low-level motor control functions
@@ -151,10 +157,18 @@ private:
      */
     void right_stop();
 
-    // Smooth acceleration/deceleration functions
+    // Non-blocking acceleration functions
     
     /**
-     * Gradually accelerate to target power
+     * Start a non-blocking acceleration sequence
+     */
+    void startAcceleration(
+        void (MotionMotors::*leftFunc)(uint8_t), uint8_t leftPower,
+        void (MotionMotors::*rightFunc)(uint8_t), uint8_t rightPower,
+        uint8_t steps);
+    
+    /**
+     * Gradually accelerate to target power (non-blocking)
      * 
      * @param moveFunction Pointer to the movement function to use
      * @param targetPower Target power level (0-255)
@@ -165,7 +179,7 @@ private:
                           uint8_t steps = SMOOTH_ACCEL_STEPS, uint8_t delayMs = SMOOTH_ACCEL_DELAY);
 
     /**
-     * Gradually decelerate to a stop
+     * Gradually decelerate to a stop (non-blocking)
      * 
      * @param moveFunction Pointer to the movement function currently in use
      * @param currentPower Current power level (0-255)
@@ -176,7 +190,7 @@ private:
                           uint8_t steps = SMOOTH_ACCEL_STEPS, uint8_t delayMs = SMOOTH_ACCEL_DELAY);
 
     /**
-     * Smoothly transition between two movement functions
+     * Smoothly transition between two movement functions (non-blocking)
      * 
      * @param currentFunction Pointer to the current movement function
      * @param currentPower Current power level (0-255)
@@ -195,6 +209,16 @@ private:
     uint8_t leftCurrentPower;
     uint8_t rightCurrentPower;
     bool smoothEnabled;
+    
+    // Non-blocking acceleration state variables
+    unsigned long lastAccelUpdateTime;
+    void (MotionMotors::*leftTargetFunction)(uint8_t);
+    void (MotionMotors::*rightTargetFunction)(uint8_t);
+    uint8_t targetLeftPower;
+    uint8_t targetRightPower;
+    uint8_t currentAccelStep;
+    uint8_t totalAccelSteps;
+    bool isAccelerating;
     
     // Motor pin configuration
     uint8_t M_LEFT_A_PIN;

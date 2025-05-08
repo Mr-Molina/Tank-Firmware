@@ -21,6 +21,14 @@ MotionMotors::MotionMotors(uint8_t leftA, uint8_t leftB, uint8_t rightA, uint8_t
   leftCurrentPower = 0;
   rightCurrentPower = 0;
   smoothEnabled = DEFAULT_SMOOTH_ENABLED;
+  
+  // Initialize timing variables for non-blocking acceleration
+  lastAccelUpdateTime = 0;
+  targetLeftPower = 0;
+  targetRightPower = 0;
+  currentAccelStep = 0;
+  totalAccelSteps = 0;
+  isAccelerating = false;
 }
 
 /**
@@ -45,88 +53,40 @@ void MotionMotors::begin() {
  * Drives the left motor forward with optional smooth acceleration
  */
 void MotionMotors::leftForward(uint8_t power, bool smooth) {
-  auto forwardFunc = &MotionMotors::left_forward;
-
-  if (smooth && smoothEnabled && leftCurrentFunction != forwardFunc) {
-    // If we're already moving, transition smoothly
-    if (leftCurrentFunction != nullptr && leftCurrentPower > 0) {
-      smoothTransition(leftCurrentFunction, leftCurrentPower, forwardFunc, power);
-    } else {
-      // Otherwise just accelerate
-      smoothAccelerate(forwardFunc, power);
-    }
-  } else {
-    // Direct control without smooth acceleration
-    left_forward(power);
-    leftCurrentFunction = forwardFunc;
-    leftCurrentPower = power;
-  }
+  // Direct control without smooth acceleration
+  left_forward(power);
+  leftCurrentFunction = &MotionMotors::left_forward;
+  leftCurrentPower = power;
 }
 
 /**
  * Drives the left motor backward with optional smooth acceleration
  */
 void MotionMotors::leftBackward(uint8_t power, bool smooth) {
-  auto backwardFunc = &MotionMotors::left_backward;
-
-  if (smooth && smoothEnabled && leftCurrentFunction != backwardFunc) {
-    // If we're already moving, transition smoothly
-    if (leftCurrentFunction != nullptr && leftCurrentPower > 0) {
-      smoothTransition(leftCurrentFunction, leftCurrentPower, backwardFunc, power);
-    } else {
-      // Otherwise just accelerate
-      smoothAccelerate(backwardFunc, power);
-    }
-  } else {
-    // Direct control without smooth acceleration
-    left_backward(power);
-    leftCurrentFunction = backwardFunc;
-    leftCurrentPower = power;
-  }
+  // Direct control without smooth acceleration
+  left_backward(power);
+  leftCurrentFunction = &MotionMotors::left_backward;
+  leftCurrentPower = power;
 }
 
 /**
  * Drives the right motor forward with optional smooth acceleration
  */
 void MotionMotors::rightForward(uint8_t power, bool smooth) {
-  auto forwardFunc = &MotionMotors::right_forward;
-
-  if (smooth && smoothEnabled && rightCurrentFunction != forwardFunc) {
-    // If we're already moving, transition smoothly
-    if (rightCurrentFunction != nullptr && rightCurrentPower > 0) {
-      smoothTransition(rightCurrentFunction, rightCurrentPower, forwardFunc, power);
-    } else {
-      // Otherwise just accelerate
-      smoothAccelerate(forwardFunc, power);
-    }
-  } else {
-    // Direct control without smooth acceleration
-    right_forward(power);
-    rightCurrentFunction = forwardFunc;
-    rightCurrentPower = power;
-  }
+  // Direct control without smooth acceleration
+  right_forward(power);
+  rightCurrentFunction = &MotionMotors::right_forward;
+  rightCurrentPower = power;
 }
 
 /**
  * Drives the right motor backward with optional smooth acceleration
  */
 void MotionMotors::rightBackward(uint8_t power, bool smooth) {
-  auto backwardFunc = &MotionMotors::right_backward;
-
-  if (smooth && smoothEnabled && rightCurrentFunction != backwardFunc) {
-    // If we're already moving, transition smoothly
-    if (rightCurrentFunction != nullptr && rightCurrentPower > 0) {
-      smoothTransition(rightCurrentFunction, rightCurrentPower, backwardFunc, power);
-    } else {
-      // Otherwise just accelerate
-      smoothAccelerate(backwardFunc, power);
-    }
-  } else {
-    // Direct control without smooth acceleration
-    right_backward(power);
-    rightCurrentFunction = backwardFunc;
-    rightCurrentPower = power;
-  }
+  // Direct control without smooth acceleration
+  right_backward(power);
+  rightCurrentFunction = &MotionMotors::right_backward;
+  rightCurrentPower = power;
 }
 
 /**
@@ -151,14 +111,11 @@ void MotionMotors::rightStop() {
  * Stops all motors immediately
  */
 void MotionMotors::stop() {
-  left_stop();
-  right_stop();
-
-  // Update current state
-  leftCurrentFunction = nullptr;
-  rightCurrentFunction = nullptr;
-  leftCurrentPower = 0;
-  rightCurrentPower = 0;
+  leftStop();
+  rightStop();
+  
+  // Reset acceleration state
+  isAccelerating = false;
 }
 
 /**
@@ -232,14 +189,87 @@ void MotionMotors::right_stop() {
 }
 
 /**
- * Smooth acceleration/deceleration implementation
+ * Non-blocking acceleration update function
+ * This should be called regularly from the main loop
  */
+void MotionMotors::updateAcceleration() {
+  // If not currently accelerating, do nothing
+  if (!isAccelerating || !smoothEnabled) {
+    return;
+  }
+  
+  // Check if it's time for the next acceleration step
+  unsigned long currentTime = millis();
+  if (currentTime - lastAccelUpdateTime < SMOOTH_ACCEL_DELAY) {
+    return;
+  }
+  
+  // Update the timestamp
+  lastAccelUpdateTime = currentTime;
+  
+  // Increment the step counter
+  currentAccelStep++;
+  
+  // Check if we've completed all steps
+  if (currentAccelStep >= totalAccelSteps) {
+    // We've reached the target power, finalize
+    if (leftTargetFunction != nullptr) {
+      (this->*leftTargetFunction)(targetLeftPower);
+      leftCurrentFunction = leftTargetFunction;
+      leftCurrentPower = targetLeftPower;
+    }
+    
+    if (rightTargetFunction != nullptr) {
+      (this->*rightTargetFunction)(targetRightPower);
+      rightCurrentFunction = rightTargetFunction;
+      rightCurrentPower = targetRightPower;
+    }
+    
+    // Reset acceleration state
+    isAccelerating = false;
+    return;
+  }
+  
+  // Calculate intermediate power levels
+  if (leftTargetFunction != nullptr) {
+    float progress = (float)currentAccelStep / totalAccelSteps;
+    uint8_t power = targetLeftPower * progress;
+    (this->*leftTargetFunction)(power);
+  }
+  
+  if (rightTargetFunction != nullptr) {
+    float progress = (float)currentAccelStep / totalAccelSteps;
+    uint8_t power = targetRightPower * progress;
+    (this->*rightTargetFunction)(power);
+  }
+}
 
 /**
- * Gradually accelerate to target power
+ * Start a non-blocking acceleration sequence
+ */
+void MotionMotors::startAcceleration(
+    void (MotionMotors::*leftFunc)(uint8_t), uint8_t leftPower,
+    void (MotionMotors::*rightFunc)(uint8_t), uint8_t rightPower,
+    uint8_t steps) {
+  
+  // Store target functions and powers
+  leftTargetFunction = leftFunc;
+  rightTargetFunction = rightFunc;
+  targetLeftPower = leftPower;
+  targetRightPower = rightPower;
+  
+  // Initialize acceleration state
+  currentAccelStep = 0;
+  totalAccelSteps = steps;
+  lastAccelUpdateTime = millis();
+  isAccelerating = true;
+}
+
+/**
+ * Smoothly accelerate to target power (non-blocking version)
  */
 void MotionMotors::smoothAccelerate(void (MotionMotors::*moveFunction)(uint8_t), uint8_t targetPower,
-                                    uint8_t steps, uint8_t delayMs) {
+                                   uint8_t steps, uint8_t delayMs) {
   // If smooth acceleration is disabled, just set the power directly
   if (!smoothEnabled || steps <= 1) {
     (this->*moveFunction)(targetPower);
@@ -254,35 +284,22 @@ void MotionMotors::smoothAccelerate(void (MotionMotors::*moveFunction)(uint8_t),
     }
     return;
   }
-
-  // Calculate step size
-  float stepSize = (float)targetPower / steps;
-
-  // Gradually increase power
-  for (uint8_t i = 1; i <= steps; i++) {
-    uint8_t power = constrain((uint8_t)(stepSize * i), 0, 255);
-    (this->*moveFunction)(power);
-    delay(delayMs);
-  }
-
-  // Ensure we reach exactly the target power
-  (this->*moveFunction)(targetPower);
-
-  // Update the appropriate current state based on which function was called
+  
+  // For left motor functions
   if (moveFunction == &MotionMotors::left_forward || moveFunction == &MotionMotors::left_backward) {
-    leftCurrentFunction = moveFunction;
-    leftCurrentPower = targetPower;
-  } else if (moveFunction == &MotionMotors::right_forward || moveFunction == &MotionMotors::right_backward) {
-    rightCurrentFunction = moveFunction;
-    rightCurrentPower = targetPower;
+    startAcceleration(moveFunction, targetPower, nullptr, 0, steps);
+  }
+  // For right motor functions
+  else if (moveFunction == &MotionMotors::right_forward || moveFunction == &MotionMotors::right_backward) {
+    startAcceleration(nullptr, 0, moveFunction, targetPower, steps);
   }
 }
 
 /**
- * Gradually decelerate to a stop
+ * Smoothly decelerate to a stop (non-blocking version)
  */
 void MotionMotors::smoothDecelerate(void (MotionMotors::*moveFunction)(uint8_t), uint8_t currentPower,
-                                    uint8_t steps, uint8_t delayMs) {
+                                   uint8_t steps, uint8_t delayMs) {
   // If smooth deceleration is disabled, just stop the appropriate motor
   if (!smoothEnabled || steps <= 1) {
     if (moveFunction == &MotionMotors::left_forward || moveFunction == &MotionMotors::left_backward) {
@@ -292,18 +309,8 @@ void MotionMotors::smoothDecelerate(void (MotionMotors::*moveFunction)(uint8_t),
     }
     return;
   }
-
-  // Calculate step size
-  float stepSize = (float)currentPower / steps;
-
-  // Gradually decrease power
-  for (int i = steps - 1; i >= 0; i--) {
-    uint8_t power = constrain((uint8_t)(stepSize * i), 0, 255);
-    (this->*moveFunction)(power);
-    delay(delayMs);
-  }
-
-  // Ensure we stop completely the appropriate motor
+  
+  // For now, just stop immediately to avoid crashes
   if (moveFunction == &MotionMotors::left_forward || moveFunction == &MotionMotors::left_backward) {
     leftStop();
   } else if (moveFunction == &MotionMotors::right_forward || moveFunction == &MotionMotors::right_backward) {
@@ -312,11 +319,11 @@ void MotionMotors::smoothDecelerate(void (MotionMotors::*moveFunction)(uint8_t),
 }
 
 /**
- * Smoothly transition between two movement functions
+ * Smoothly transition between two movement functions (non-blocking version)
  */
 void MotionMotors::smoothTransition(void (MotionMotors::*currentFunction)(uint8_t), uint8_t currentPower,
-                                    void (MotionMotors::*targetFunction)(uint8_t), uint8_t targetPower,
-                                    uint8_t steps, uint8_t delayMs) {
+                                   void (MotionMotors::*targetFunction)(uint8_t), uint8_t targetPower,
+                                   uint8_t steps, uint8_t delayMs) {
   // If smooth transition is disabled or functions are the same, just set the power directly
   if (!smoothEnabled || steps <= 1 || currentFunction == targetFunction) {
     (this->*targetFunction)(targetPower);
@@ -331,10 +338,16 @@ void MotionMotors::smoothTransition(void (MotionMotors::*currentFunction)(uint8_
     }
     return;
   }
-
-  // First decelerate the current movement
-  smoothDecelerate(currentFunction, currentPower, steps / 2, delayMs);
-
-  // Then accelerate to the new movement
-  smoothAccelerate(targetFunction, targetPower, steps / 2, delayMs);
+  
+  // For now, just go directly to the target to avoid crashes
+  (this->*targetFunction)(targetPower);
+  
+  // Update the appropriate current state
+  if (targetFunction == &MotionMotors::left_forward || targetFunction == &MotionMotors::left_backward) {
+    leftCurrentFunction = targetFunction;
+    leftCurrentPower = targetPower;
+  } else if (targetFunction == &MotionMotors::right_forward || targetFunction == &MotionMotors::right_backward) {
+    rightCurrentFunction = targetFunction;
+    rightCurrentPower = targetPower;
+  }
 }

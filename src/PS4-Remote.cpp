@@ -4,7 +4,7 @@
 #include "esp_gap_bt_api.h"
 #include "esp_err.h"
 
-// We're now using the constants defined in PS4-Remote.h instead of external references
+// Using constants defined in PS4-Remote.h
 
 // Static instance pointer for callbacks
 PS4Remote* PS4Remote::_instance = nullptr;
@@ -26,17 +26,26 @@ void PS4Remote::setInstance(PS4Remote* instance) {
 }
 
 void PS4Remote::begin() {
+    Serial.println("PS4Remote::begin - Starting initialization");
     PS4.attach(notifyCallback);
+    Serial.println("PS4Remote::begin - Attached notify callback");
     PS4.attachOnConnect(onConnectCallback);
+    Serial.println("PS4Remote::begin - Attached connect callback");
     PS4.attachOnDisconnect(onDisconnectCallback);
+    Serial.println("PS4Remote::begin - Attached disconnect callback");
     PS4.begin();
-    removePairedDevices(); // This helps to solve connection issues
+    Serial.println("PS4Remote::begin - PS4 controller initialized");
+    
+    // Disabled to prevent potential crashes
+    // removePairedDevices();
+    
     Serial.print("This device MAC is: ");
     printDeviceAddress();
     Serial.println("");
 
     // Print header for data columns
     Serial.println("\n--- PS4 Controller Data ---");
+    Serial.println("PS4Remote::begin - Initialization complete");
 }
 
 PS4Remote::ControllerState PS4Remote::getState() {
