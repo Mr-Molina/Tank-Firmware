@@ -4,13 +4,7 @@
 #include "esp_gap_bt_api.h"
 #include "esp_err.h"
 
-// External references to configuration flags defined in main.cpp
-extern int DEADZONE_VALUE;
-extern int GYRO_DEADZONE_VALUE;
-extern int ACC_DEADZONE_VALUE;
-extern int ACC_PRECISION_VALUE;
-extern int USE_ACCELEROMETER_VALUE;
-extern int EVENTS_VALUE;
+// We're now using the constants defined in PS4-Remote.h instead of external references
 
 // Static instance pointer for callbacks
 PS4Remote* PS4Remote::_instance = nullptr;

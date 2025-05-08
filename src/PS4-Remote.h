@@ -4,6 +4,14 @@
 #include <Arduino.h>
 #include <PS4Controller.h>
 
+// Default configuration values for PS4 controller
+#define DEADZONE_VALUE 10         // Joystick deadzone (0-127)
+#define GYRO_DEADZONE_VALUE 100   // Gyroscope deadzone
+#define ACC_DEADZONE_VALUE 1000   // Accelerometer deadzone
+#define ACC_PRECISION_VALUE 1000  // Accelerometer precision divisor
+#define USE_ACCELEROMETER_VALUE 0 // Flag to enable/disable accelerometer data
+#define EVENTS_VALUE 1            // Flag to enable/disable event processing
+
 class PS4Remote
 {
 public:
