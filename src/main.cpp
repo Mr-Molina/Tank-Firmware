@@ -47,44 +47,10 @@ MotionMotors motors(
     RIGHT_MOTOR_PIN_A, RIGHT_MOTOR_PIN_B,
     LEFT_MOTOR_CALIBRATION, RIGHT_MOTOR_CALIBRATION);
 
-// Function to print controller battery level
-void printBatteryLevel()
-{
-    if (PS4.isConnected())
-    {
-        int batteryLevel = PS4.Battery();
-        Serial.print("PS4 Controller Battery Level: ");
-
-        // Convert battery level to percentage or description
-        switch (batteryLevel)
-        {
-        case 0:
-            Serial.println("Empty (0%)");
-            break;
-        case 1:
-            Serial.println("Low (20-40%)");
-            break;
-        case 2:
-            Serial.println("Medium (40-60%)");
-            break;
-        case 3:
-            Serial.println("High (60-80%)");
-            break;
-        case 4:
-            Serial.println("Full (80-100%)");
-            break;
-        default:
-            Serial.println("Unknown");
-            break;
-        }
-    }
-}
-
 // Custom connection callback
 void onPS4ControllerConnect()
 {
     Serial.println("\n*** PS4 Controller Connected ***");
-    printBatteryLevel();
 }
 
 // Custom disconnection callback
@@ -236,14 +202,6 @@ void loop()
     {
         // No controller connected, ensure motors are stopped
         motors.stop();
-    }
-
-    // Periodically check battery level (every 30 seconds)
-    static unsigned long lastBatteryCheck = 0;
-    if (PS4.isConnected() && millis() - lastBatteryCheck > 30000)
-    {
-        printBatteryLevel();
-        lastBatteryCheck = millis();
     }
 
     delay(20); // Short delay for stability
