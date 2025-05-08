@@ -42,9 +42,9 @@ private:
     unsigned long lastShareButtonTime;
     
     // Default timing intervals (in milliseconds)
-    static const unsigned long UPDATE_INTERVAL = 20;      // 50Hz control loop
-    static const unsigned long BUTTON_CHECK_INTERVAL = 50; // 20Hz button polling
-    static const unsigned long DEBOUNCE_TIME = 200;       // Button debounce time
+    static const unsigned long UPDATE_INTERVAL;      // 50Hz control loop
+    static const unsigned long BUTTON_CHECK_INTERVAL; // 20Hz button polling
+    static const unsigned long DEBOUNCE_TIME;       // Button debounce time
     
     // Private methods
     void controlMotorsWithJoystick(PS4Remote::ControllerState state);

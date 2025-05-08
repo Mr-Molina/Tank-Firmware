@@ -52,10 +52,10 @@ void loop()
     // Update controller and handle all motor control
     // The timing is now handled internally by the TankController class
     tank.update();
-    
+
     // No delay needed here - the controller handles its own timing
     // This allows the loop to run as fast as possible for other tasks
-    
+
     // Other non-blocking code can be added here if needed
     // For example, reading sensors, updating displays, etc.
 }

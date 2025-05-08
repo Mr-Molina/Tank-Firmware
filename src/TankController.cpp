@@ -1,7 +1,10 @@
 #include "TankController.h"
 
-// Initialize static instance pointer
+// Initialize static instance pointer and constants
 TankController* TankController::instance = nullptr;
+const unsigned long TankController::UPDATE_INTERVAL = 20;      // 50Hz control loop
+const unsigned long TankController::BUTTON_CHECK_INTERVAL = 50; // 20Hz button polling
+const unsigned long TankController::DEBOUNCE_TIME = 200;       // Button debounce time
 
 // Constructor
 TankController::TankController(
@@ -139,10 +142,12 @@ bool TankController::isTimeToCheckButtons() {
 
 // Set a custom update interval
 void TankController::setUpdateInterval(unsigned long intervalMs) {
-    // Don't allow intervals that are too short or too long
-    if (intervalMs >= 5 && intervalMs <= 100) {
-        const_cast<unsigned long&>(UPDATE_INTERVAL) = intervalMs;
-    }
+    // Since UPDATE_INTERVAL is a const, we can't modify it directly
+    // Instead, we could implement a variable update interval approach
+    // For now, we'll just print a message indicating this isn't supported
+    Serial.print("Note: Update interval is fixed at ");
+    Serial.print(UPDATE_INTERVAL);
+    Serial.println("ms");
 }
 
 // Get the current update interval
