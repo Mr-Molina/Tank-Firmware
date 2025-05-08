@@ -27,30 +27,31 @@
 // Create controller instance
 TankController tank(
     // PS4 controller config
-    EVENTS, BUTTONS, JOYSTICKS, SENSORS, 
-    USE_ACCELEROMETER, DEADZONE, GYRO_DEADZONE, 
+    EVENTS, BUTTONS, JOYSTICKS, SENSORS,
+    USE_ACCELEROMETER, DEADZONE, GYRO_DEADZONE,
     ACC_DEADZONE, ACC_PRECISION,
     // Motor config
     LEFT_MOTOR_PIN_A, LEFT_MOTOR_PIN_B,
     RIGHT_MOTOR_PIN_A, RIGHT_MOTOR_PIN_B,
     LEFT_MOTOR_CALIBRATION, RIGHT_MOTOR_CALIBRATION,
-    MAX_MOTOR_SPEED, TURN_SPEED_FACTOR
-);
+    MAX_MOTOR_SPEED, TURN_SPEED_FACTOR);
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println("Initializing PS4 Controller and Motors...");
-    
+
     // Initialize the tank controller
     tank.begin();
-    
+
     Serial.println("System initialized. Waiting for PS4 controller connection...");
 }
 
-void loop() {
+void loop()
+{
     // Update controller and handle all motor control
     tank.update();
-    
+
     // Short delay for stability
     delay(20);
 }
