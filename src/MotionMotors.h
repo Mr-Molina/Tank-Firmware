@@ -8,15 +8,9 @@
 #define SMOOTH_ACCEL_STEPS 10
 #define SMOOTH_ACCEL_DELAY 20
 
-// Motor calibration factors (adjust these to match your specific motors)
-#define LEFT_CALIBRATION 1.0
-#define RIGHT_CALIBRATION 1.0
-
-// Motor pin definitions (adjust these to match your wiring)
-#define M_LEFT_A_PIN 5   // Left motor pin A
-#define M_LEFT_B_PIN 6   // Left motor pin B
-#define M_RIGHT_A_PIN 9  // Right motor pin A
-#define M_RIGHT_B_PIN 10 // Right motor pin B
+// Default motor calibration factors (adjust these to match your specific motors)
+#define DEFAULT_LEFT_CALIBRATION 1.0
+#define DEFAULT_RIGHT_CALIBRATION 1.0
 
 /**
  * MotionMotors class for controlling a vehicle with 2 motors
@@ -28,8 +22,17 @@ class MotionMotors {
 public:
     /**
      * Constructor
+     * 
+     * @param leftA Left motor pin A
+     * @param leftB Left motor pin B
+     * @param rightA Right motor pin A
+     * @param rightB Right motor pin B
+     * @param leftCalibration Calibration factor for left motor (default: 1.0)
+     * @param rightCalibration Calibration factor for right motor (default: 1.0)
      */
-    MotionMotors();
+    MotionMotors(uint8_t leftA, uint8_t leftB, uint8_t rightA, uint8_t rightB, 
+                 float leftCalibration = DEFAULT_LEFT_CALIBRATION, 
+                 float rightCalibration = DEFAULT_RIGHT_CALIBRATION);
 
     /**
      * Initialize the motors
@@ -192,6 +195,16 @@ private:
     uint8_t leftCurrentPower;
     uint8_t rightCurrentPower;
     bool smoothEnabled;
+    
+    // Motor pin configuration
+    uint8_t M_LEFT_A_PIN;
+    uint8_t M_LEFT_B_PIN;
+    uint8_t M_RIGHT_A_PIN;
+    uint8_t M_RIGHT_B_PIN;
+    
+    // Motor calibration factors
+    float LEFT_CALIBRATION;
+    float RIGHT_CALIBRATION;
 };
 
 #endif // MOTION_MOTORS_H

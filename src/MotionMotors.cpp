@@ -3,7 +3,19 @@
 /**
  * Constructor
  */
-MotionMotors::MotionMotors() {
+MotionMotors::MotionMotors(uint8_t leftA, uint8_t leftB, uint8_t rightA, uint8_t rightB,
+                           float leftCalibration, float rightCalibration) {
+  // Initialize motor pins
+  M_LEFT_A_PIN = leftA;
+  M_LEFT_B_PIN = leftB;
+  M_RIGHT_A_PIN = rightA;
+  M_RIGHT_B_PIN = rightB;
+  
+  // Initialize calibration factors
+  LEFT_CALIBRATION = leftCalibration;
+  RIGHT_CALIBRATION = rightCalibration;
+  
+  // Initialize state variables
   leftCurrentFunction = nullptr;
   rightCurrentFunction = nullptr;
   leftCurrentPower = 0;
