@@ -35,8 +35,22 @@ private:
     // State tracking
     bool lastShareState;
     
+    // Timing control variables
+    unsigned long lastUpdateTime;
+    unsigned long lastButtonCheckTime;
+    unsigned long lastEmergencyStopTime;
+    unsigned long lastShareButtonTime;
+    
+    // Default timing intervals (in milliseconds)
+    static const unsigned long UPDATE_INTERVAL = 20;      // 50Hz control loop
+    static const unsigned long BUTTON_CHECK_INTERVAL = 50; // 20Hz button polling
+    static const unsigned long DEBOUNCE_TIME = 200;       // Button debounce time
+    
     // Private methods
     void controlMotorsWithJoystick(PS4Remote::ControllerState state);
+    void handleButtonControls(PS4Remote::ControllerState state);
+    bool isTimeToUpdate();
+    bool isTimeToCheckButtons();
     
     // Static callback methods
     static void onConnect();
@@ -60,6 +74,20 @@ public:
     
     void begin();
     void update();
+    
+    /**
+     * Sets a custom update interval for the control loop
+     * 
+     * @param intervalMs Interval in milliseconds between updates
+     */
+    void setUpdateInterval(unsigned long intervalMs);
+    
+    /**
+     * Gets the current update interval
+     * 
+     * @return Current update interval in milliseconds
+     */
+    unsigned long getUpdateInterval() const;
 };
 
 #endif // TANK_CONTROLLER_H

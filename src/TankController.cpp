@@ -39,7 +39,12 @@ TankController::TankController(
         rightMotorPinA, rightMotorPinB,
         leftMotorCalibration, rightMotorCalibration
     ),
-    lastShareState(false)
+    lastShareState(false),
+    // Initialize timing variables
+    lastUpdateTime(0),
+    lastButtonCheckTime(0),
+    lastEmergencyStopTime(0),
+    lastShareButtonTime(0)
 {
     // Store instance pointer for callbacks
     instance = this;
@@ -56,6 +61,15 @@ void TankController::begin() {
     
     // Initialize motors
     motors.begin();
+    
+    // Initialize timing variables with current time
+    unsigned long currentTime = millis();
+    lastUpdateTime = currentTime;
+    lastButtonCheckTime = currentTime;
+    lastEmergencyStopTime = currentTime;
+    lastShareButtonTime = currentTime;
+    
+    Serial.println("TankController initialized with timing control");
 }
 
 // Update function called in main loop
@@ -63,31 +77,77 @@ void TankController::update() {
     // Get current controller state
     PS4Remote::ControllerState state = ps4.getState();
     
-    // Control motors based on joystick input if controller is connected
-    if (PS4.isConnected()) {
-        controlMotorsWithJoystick(state);
-        
-        // Handle special button controls
-        if (state.options) {
-            // Options button: Emergency stop
+    // Only update motor control at the specified interval
+    if (isTimeToUpdate()) {
+        // Control motors based on joystick input if controller is connected
+        if (PS4.isConnected()) {
+            controlMotorsWithJoystick(state);
+        } else {
+            // No controller connected, ensure motors are stopped
             motors.stop();
-            Serial.println("EMERGENCY STOP");
-            delay(500); // Debounce
         }
-        
-        // Toggle smooth acceleration with Share button
-        if (state.share && !lastShareState) {
-            bool smooth = !motors.isSmoothEnabled();
-            motors.setSmoothEnabled(smooth);
-            Serial.print("Smooth acceleration: ");
-            Serial.println(smooth ? "ENABLED" : "DISABLED");
-            delay(200); // Debounce
-        }
-        lastShareState = state.share;
-    } else {
-        // No controller connected, ensure motors are stopped
-        motors.stop();
     }
+    
+    // Check buttons at a different rate to avoid overwhelming the system
+    if (isTimeToCheckButtons() && PS4.isConnected()) {
+        handleButtonControls(state);
+    }
+}
+
+// Handle button controls separately from motor control
+void TankController::handleButtonControls(PS4Remote::ControllerState state) {
+    unsigned long currentTime = millis();
+    
+    // Handle special button controls
+    if (state.options && (currentTime - lastEmergencyStopTime > DEBOUNCE_TIME)) {
+        // Options button: Emergency stop
+        motors.stop();
+        Serial.println("EMERGENCY STOP");
+        lastEmergencyStopTime = currentTime;
+    }
+    
+    // Toggle smooth acceleration with Share button
+    if (state.share && !lastShareState && (currentTime - lastShareButtonTime > DEBOUNCE_TIME)) {
+        bool smooth = !motors.isSmoothEnabled();
+        motors.setSmoothEnabled(smooth);
+        Serial.print("Smooth acceleration: ");
+        Serial.println(smooth ? "ENABLED" : "DISABLED");
+        lastShareButtonTime = currentTime;
+    }
+    lastShareState = state.share;
+}
+
+// Check if it's time to update the motor control
+bool TankController::isTimeToUpdate() {
+    unsigned long currentTime = millis();
+    if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+        lastUpdateTime = currentTime;
+        return true;
+    }
+    return false;
+}
+
+// Check if it's time to check button states
+bool TankController::isTimeToCheckButtons() {
+    unsigned long currentTime = millis();
+    if (currentTime - lastButtonCheckTime >= BUTTON_CHECK_INTERVAL) {
+        lastButtonCheckTime = currentTime;
+        return true;
+    }
+    return false;
+}
+
+// Set a custom update interval
+void TankController::setUpdateInterval(unsigned long intervalMs) {
+    // Don't allow intervals that are too short or too long
+    if (intervalMs >= 5 && intervalMs <= 100) {
+        const_cast<unsigned long&>(UPDATE_INTERVAL) = intervalMs;
+    }
+}
+
+// Get the current update interval
+unsigned long TankController::getUpdateInterval() const {
+    return UPDATE_INTERVAL;
 }
 
 // Function to control motors based on joystick input
