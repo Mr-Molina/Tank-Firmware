@@ -4,33 +4,33 @@
 /********************************************
  * ROBOT SETTINGS
  * 
- * These settings control how the robot works.
- * You can change these values to adjust how
- * the robot behaves!
+ * Hey there! These settings control how your robot works.
+ * You can change these numbers to make your robot behave differently.
+ * Think of it like adjusting the settings on a video game!
  ********************************************/
 
-// Controller settings - What features to use
-#define EVENTS 1            // Do we want to track button press events?
-#define BUTTONS 1           // Do we want to use controller buttons?
-#define JOYSTICKS 1         // Do we want to use the joysticks?
-#define SENSORS 1           // Do we want to use controller sensors?
-#define USE_ACCELEROMETER 0 // Should we use the motion sensors? (0 = No, 1 = Yes)
+// Controller settings - What cool features to use
+#define EVENTS 1            // Should the robot notice when you press and release buttons? (1 = Yes, 0 = No)
+#define BUTTONS 1           // Should the robot respond to controller buttons? (1 = Yes, 0 = No)
+#define JOYSTICKS 1         // Should the robot respond to the joysticks? (1 = Yes, 0 = No)
+#define SENSORS 1           // Should the robot use the controller's motion sensors? (1 = Yes, 0 = No)
+#define USE_ACCELEROMETER 0 // Should the robot detect tilting of the controller? (0 = No, 1 = Yes)
 
 // Joystick settings
-#define DEADZONE 10         // How far to move joystick before robot responds (0-127)
-                            // Higher number = less sensitive to small movements
+#define DEADZONE 10         // How far you need to move the joystick before the robot responds (0-127)
+                            // Higher number = less sensitive (ignores tiny movements)
 
 // Motion sensor settings
-#define GYRO_DEADZONE 100   // Ignore small gyroscope movements
-#define ACC_DEADZONE 1000   // Ignore small accelerometer movements
-#define ACC_PRECISION 1000  // How precise the accelerometer readings should be
+#define GYRO_DEADZONE 100   // Ignore small controller movements (higher = less sensitive)
+#define ACC_DEADZONE 1000   // Ignore small tilting movements (higher = less sensitive)
+#define ACC_PRECISION 1000  // How precise the tilt readings should be (higher = less precise)
 
-// Debug message settings - What information to show on the computer
+// Debug message settings - What information to show on the computer screen
 #define DEBUG_PS4_DATA 0      // Show controller button presses? (0 = No, 1 = Yes)
-#define DEBUG_MOTOR_ACTIONS 1 // Show motor movements? (0 = No, 1 = Yes)
-#define DEBUG_CALIBRATION 1   // Show motor power adjustments? (0 = No, 1 = Yes)
+#define DEBUG_MOTOR_ACTIONS 1 // Show when motors move? (0 = No, 1 = Yes)
+#define DEBUG_CALIBRATION 1   // Show when motor power is adjusted? (0 = No, 1 = Yes)
 
-// Motor connection pins - Which wires connect where
+// Motor connection pins - Which wires connect where on the circuit board
 #define LEFT_MOTOR_PIN_A 18   // Left motor forward pin
 #define LEFT_MOTOR_PIN_B 19   // Left motor backward pin
 #define RIGHT_MOTOR_PIN_A 16  // Right motor forward pin
@@ -41,6 +41,7 @@
 #define RIGHT_MOTOR_CALIBRATION 1.0 // Right motor power factor (1.0 = 100% power)
 #define MAX_MOTOR_SPEED 255         // Maximum motor speed (0-255)
 #define TURN_SPEED_FACTOR 0.7       // How fast the robot turns (0.0-1.0)
+                                    // Lower number = gentler turns
 
 // Create our robot controller
 // This sets up the "brain" of the robot with all our settings
@@ -74,6 +75,7 @@ int DEBUG_CALIBRATION_VALUE = DEBUG_CALIBRATION;     // Show calibration changes
 void setup()
 {
     // Start communication with the computer at 115200 bits per second
+    // This is like opening a phone line to talk to the computer
     Serial.begin(115200);
     Serial.println("Robot is starting up...");
     
@@ -93,6 +95,7 @@ void setup()
 }
 
 // This function runs over and over again while the robot is on
+// It's like the robot's heartbeat - it keeps checking what to do next
 void loop()
 {
     // Check the controller and update the motors

@@ -4,23 +4,24 @@
 #include "esp_gap_bt_api.h"
 #include "esp_err.h"
 
-// External references to configuration flags defined in main.cpp
+// These connect to the settings in main.cpp
 extern int DEADZONE_VALUE;
 extern int GYRO_DEADZONE_VALUE;
 extern int ACC_DEADZONE_VALUE;
 extern int ACC_PRECISION_VALUE;
 extern int USE_ACCELEROMETER_VALUE;
 extern int EVENTS_VALUE;
-extern int DEBUG_PS4_DATA_VALUE;  // Debug flag for PS4 controller data
+extern int DEBUG_PS4_DATA_VALUE;  // Should we show controller data on the screen?
 
-// Static instance pointer for callbacks
+// This helps the callback functions find our PS4Remote object
 PS4Remote* PS4Remote::_instance = nullptr;
 
+// Constructor - Sets up a new PS4Remote object
 PS4Remote::PS4Remote() {
     // Initialize timestamps
     lastTimeStamp = 0;
     
-    // Initialize controller state
+    // Initialize controller state (all buttons unpressed, joysticks centered)
     memset(&currentState, 0, sizeof(ControllerState));
     memset(&prevState, 0, sizeof(ControllerState));
     
@@ -28,24 +29,31 @@ PS4Remote::PS4Remote() {
     setInstance(this);
 }
 
+// This helps callback functions find our PS4Remote object
 void PS4Remote::setInstance(PS4Remote* instance) {
     _instance = instance;
 }
 
+// Begin - Sets up the PS4 controller connection
 void PS4Remote::begin() {
     Serial.println("PS4Remote::begin - Starting initialization");
+    
+    // Set up callback functions that run when controller events happen
     PS4.attach(notifyCallback);
     Serial.println("PS4Remote::begin - Attached notify callback");
     PS4.attachOnConnect(onConnectCallback);
     Serial.println("PS4Remote::begin - Attached connect callback");
     PS4.attachOnDisconnect(onDisconnectCallback);
     Serial.println("PS4Remote::begin - Attached disconnect callback");
+    
+    // Start the PS4 controller (turns on Bluetooth)
     PS4.begin();
     Serial.println("PS4Remote::begin - PS4 controller initialized");
     
     // Disabled to prevent potential crashes
     // removePairedDevices();
     
+    // Show this device's Bluetooth address
     Serial.print("This device MAC is: ");
     printDeviceAddress();
     Serial.println("");
@@ -55,6 +63,7 @@ void PS4Remote::begin() {
     Serial.println("PS4Remote::begin - Initialization complete");
 }
 
+// Get the current state of all buttons and joysticks
 PS4Remote::ControllerState PS4Remote::getState() {
     return currentState;
 }
@@ -66,38 +75,45 @@ void PS4Remote::notifyCallback() {
     }
 }
 
+// This runs when the controller connects
 void PS4Remote::onConnectCallback() {
     Serial.println("Connected!");
 }
 
+// This runs when the controller disconnects
 void PS4Remote::onDisconnectCallback() {
     Serial.println("Disconnected!");
 }
 
 // Function to apply deadzone to joystick values
+// This ignores small movements when the joystick is near the center
 int PS4Remote::applyDeadzone(int value, int deadzone) {
-    // If the absolute value is less than the deadzone, return 0
+    // If the movement is smaller than the deadzone, ignore it
     if (abs(value) < deadzone) {
-        return 0;
+        return 0;  // Return 0 (centered position)
     }
-    return value;
+    return value;  // Return the actual value
 }
 
 // Function to reduce precision of accelerometer values
+// This makes tilt readings less jumpy and easier to work with
 int PS4Remote::reduceAccPrecision(int value) {
-    // First apply deadzone
+    // First apply deadzone (ignore very small tilts)
     if (abs(value) < DEFAULT_ACC_DEADZONE) {
-        return 0;
+        return 0;  // Return 0 (no tilt)
     }
+    
     // Then reduce precision by dividing and multiplying
+    // This rounds the value to the nearest multiple of DEFAULT_ACC_PRECISION
     return (value / DEFAULT_ACC_PRECISION) * DEFAULT_ACC_PRECISION;
 }
 
+// Update - Reads the latest data from the controller
 void PS4Remote::update() {
     // Reset change flag
     currentState.dataChanged = false;
 
-    // Only process at a reasonable rate
+    // Only process at a reasonable rate (every 50 milliseconds)
     if (millis() - lastTimeStamp > 50) {
         // Get button states - Face buttons
         currentState.square = PS4.Square();
@@ -131,12 +147,12 @@ void PS4Remote::update() {
         currentState.rx = applyDeadzone(PS4.RStickX(), DEADZONE_VALUE);
         currentState.ry = applyDeadzone(PS4.RStickY(), DEADZONE_VALUE);
 
-        // Get and process gyroscope values
+        // Get and process gyroscope values (rotation)
         currentState.gx = applyDeadzone(PS4.GyrX(), GYRO_DEADZONE_VALUE);
         currentState.gy = applyDeadzone(PS4.GyrY(), GYRO_DEADZONE_VALUE);
         currentState.gz = applyDeadzone(PS4.GyrZ(), GYRO_DEADZONE_VALUE);
 
-        // Get and process accelerometer values with reduced precision (if enabled)
+        // Get and process accelerometer values (tilt)
         currentState.ax = 0;
         currentState.ay = 0;
         currentState.az = 0;
@@ -146,7 +162,7 @@ void PS4Remote::update() {
             currentState.az = reduceAccPrecision(PS4.AccZ());
         }
 
-        // Check if any values have changed
+        // Check if any values have changed since last update
         bool valuesChanged = (
             currentState.square != prevState.square || 
             currentState.triangle != prevState.triangle || 
@@ -175,6 +191,7 @@ void PS4Remote::update() {
             currentState.gz != prevState.gz
         );
 
+        // Also check accelerometer values if they're enabled
         if (USE_ACCELEROMETER_VALUE) {
             valuesChanged = valuesChanged || (
                 currentState.ax != prevState.ax || 
@@ -183,6 +200,7 @@ void PS4Remote::update() {
             );
         }
 
+        // If anything changed, update our state and maybe show debug info
         if (valuesChanged) {
             currentState.dataChanged = true;
 
@@ -215,13 +233,16 @@ void PS4Remote::update() {
                               currentState.l3 ? "ON" : "OFF",
                               currentState.r3 ? "ON" : "OFF");
     
+                // Joystick positions
                 Serial.printf("JOY: LX:%4d LY:%4d RX:%4d RY:%4d | ",
                               currentState.lx, currentState.ly, 
                               currentState.rx, currentState.ry);
     
+                // Gyroscope (rotation) values
                 Serial.printf("GYRO: X:%5d Y:%5d Z:%5d",
                               currentState.gx, currentState.gy, currentState.gz);
     
+                // Accelerometer (tilt) values, if enabled
                 if (USE_ACCELEROMETER_VALUE) {
                     Serial.printf(" | ACC: X:%5d Y:%5d Z:%5d",
                                   currentState.ax, currentState.ay, currentState.az);
@@ -230,41 +251,45 @@ void PS4Remote::update() {
                 Serial.println(); // End the line
             }
 
-            // Update previous state
+            // Update previous state to remember what changed
             prevState = currentState;
         }
 
+        // Remember when we last updated
         lastTimeStamp = millis();
     }
 
+    // Handle button events (press and release) if enabled
     if (EVENTS_VALUE) {
-        // Handle button events separately if needed
-        boolean sqd = PS4.event.button_down.square,
-                squ = PS4.event.button_up.square,
-                trd = PS4.event.button_down.triangle,
-                tru = PS4.event.button_up.triangle,
-                crd = PS4.event.button_down.cross,
-                cru = PS4.event.button_up.cross,
-                cid = PS4.event.button_down.circle,
-                ciu = PS4.event.button_up.circle,
-                upd = PS4.event.button_down.up,
-                upu = PS4.event.button_up.up,
-                dnd = PS4.event.button_down.down,
-                dnu = PS4.event.button_up.down,
-                ltd = PS4.event.button_down.left,
-                ltu = PS4.event.button_up.left,
-                rtd = PS4.event.button_down.right,
-                rtu = PS4.event.button_up.right,
-                l1d = PS4.event.button_down.l1,
-                l1u = PS4.event.button_up.l1,
-                r1d = PS4.event.button_down.r1,
-                r1u = PS4.event.button_up.r1;
+        // Check which buttons were just pressed or released
+        boolean sqd = PS4.event.button_down.square,   // Square button pressed
+                squ = PS4.event.button_up.square,     // Square button released
+                trd = PS4.event.button_down.triangle, // Triangle button pressed
+                tru = PS4.event.button_up.triangle,   // Triangle button released
+                crd = PS4.event.button_down.cross,    // Cross button pressed
+                cru = PS4.event.button_up.cross,      // Cross button released
+                cid = PS4.event.button_down.circle,   // Circle button pressed
+                ciu = PS4.event.button_up.circle,     // Circle button released
+                upd = PS4.event.button_down.up,       // Up button pressed
+                upu = PS4.event.button_up.up,         // Up button released
+                dnd = PS4.event.button_down.down,     // Down button pressed
+                dnu = PS4.event.button_up.down,       // Down button released
+                ltd = PS4.event.button_down.left,     // Left button pressed
+                ltu = PS4.event.button_up.left,       // Left button released
+                rtd = PS4.event.button_down.right,    // Right button pressed
+                rtu = PS4.event.button_up.right,      // Right button released
+                l1d = PS4.event.button_down.l1,       // L1 button pressed
+                l1u = PS4.event.button_up.l1,         // L1 button released
+                r1d = PS4.event.button_down.r1,       // R1 button pressed
+                r1u = PS4.event.button_up.r1;         // R1 button released
 
-        boolean l3d = PS4.event.button_down.l3,
-                l3u = PS4.event.button_up.l3,
-                r3d = PS4.event.button_down.r3,
-                r3u = PS4.event.button_up.r3;
+        // Check thumbstick button events
+        boolean l3d = PS4.event.button_down.l3,       // L3 button pressed
+                l3u = PS4.event.button_up.l3,         // L3 button released
+                r3d = PS4.event.button_down.r3,       // R3 button pressed
+                r3u = PS4.event.button_up.r3;         // R3 button released
 
+        // If any button events happened, maybe show debug info
         if (sqd || squ || trd || tru || crd || cru || cid || ciu ||
             upd || upu || dnd || dnu || ltd || ltu || rtd || rtu ||
             l1d || l1u || r1d || r1u || l3d || l3u || r3d || r3u) {
@@ -310,6 +335,8 @@ void PS4Remote::update() {
     }
 }
 
+// Remove any previously paired controllers
+// (This is disabled to prevent potential crashes)
 void PS4Remote::removePairedDevices() {
     uint8_t pairedDeviceBtAddr[20][6];
     int count = esp_bt_gap_get_bond_device_num();
@@ -319,6 +346,8 @@ void PS4Remote::removePairedDevices() {
     }
 }
 
+// Show this device's Bluetooth address
+// This is useful for pairing the controller
 void PS4Remote::printDeviceAddress() {
     const uint8_t *point = esp_bt_dev_get_address();
     for (int i = 0; i < 6; i++) {

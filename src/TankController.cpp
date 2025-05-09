@@ -20,7 +20,7 @@ TankController::TankController(
     float leftMotorCalibration, float rightMotorCalibration,
     int maxMotorSpeed, float turnSpeedFactor
 ) : 
-    // Initialize member variables
+    // Initialize member variables - store all the settings
     events(events),
     buttons(buttons),
     joysticks(joysticks),
@@ -44,12 +44,13 @@ TankController::TankController(
         rightMotorPinA, rightMotorPinB,
         leftMotorCalibration, rightMotorCalibration
     ),
+    // Initialize button memory - no buttons pressed yet
     lastShareState(false),
     lastUpState(false),
     lastDownState(false),
     lastTriangleState(false),
     lastXState(false),
-    // Initialize timing variables
+    // Initialize timing variables - nothing has happened yet
     lastUpdateTime(0),
     lastButtonCheckTime(0),
     lastEmergencyStopTime(0),
@@ -154,8 +155,11 @@ void TankController::handleButtonControls(PS4Remote::ControllerState state) {
     // Remember the current state of the Share button for next time
     lastShareState = state.share;
     
+    // MOTOR CALIBRATION BUTTONS
     // These buttons let you adjust how powerful each motor is compared to the other
     // This helps balance the robot if one motor is stronger than the other
+    
+    // Only process calibration buttons if enough time has passed since last press
     if (currentTime - lastCalibrationButtonTime > DEBOUNCE_TIME) {
         // D-pad Up: Make the left motor stronger
         if (state.up && !lastUpState) {
@@ -234,7 +238,7 @@ void TankController::handleButtonControls(PS4Remote::ControllerState state) {
         }
     }
     
-    // Update button states
+    // Update button states - remember which buttons were pressed for next time
     lastUpState = state.up;
     lastDownState = state.down;
     lastTriangleState = state.triangle;

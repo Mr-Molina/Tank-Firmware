@@ -15,7 +15,7 @@
 class TankController
 {
 private:
-    // PS4 controller settings
+    // PS4 controller settings - What features to use
     int events;           // Should we track button press events?
     int buttons;          // Should we use controller buttons?
     int joysticks;        // Should we use the joysticks?
@@ -26,7 +26,7 @@ private:
     int accDeadzone;      // Ignore small acceleration movements
     int accPrecision;     // How precise the motion readings should be
 
-    // Motor settings
+    // Motor settings - How the motors are connected and controlled
     int leftMotorPinA;           // Left motor forward pin
     int leftMotorPinB;           // Left motor backward pin
     int rightMotorPinA;          // Right motor forward pin

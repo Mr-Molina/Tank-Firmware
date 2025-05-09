@@ -1,182 +1,224 @@
 #include "MotionMotors.h"
 
-// External reference to debug flag defined in main.cpp
+// This connects to the debug setting in main.cpp
 extern int DEBUG_MOTOR_ACTIONS_VALUE;
 
 /**
- * Constructor
+ * Constructor - This sets up a new MotionMotors object
+ * 
+ * Think of this as building the robot's "legs" before using them.
  */
 MotionMotors::MotionMotors(uint8_t leftA, uint8_t leftB, uint8_t rightA, uint8_t rightB,
                            float leftCalibration, float rightCalibration) {
-  // Initialize motor pins
-  M_LEFT_A_PIN = leftA;
-  M_LEFT_B_PIN = leftB;
-  M_RIGHT_A_PIN = rightA;
-  M_RIGHT_B_PIN = rightB;
+  // Remember which pins control which motors
+  M_LEFT_A_PIN = leftA;    // Left motor forward pin
+  M_LEFT_B_PIN = leftB;    // Left motor backward pin
+  M_RIGHT_A_PIN = rightA;  // Right motor forward pin
+  M_RIGHT_B_PIN = rightB;  // Right motor backward pin
   
-  // Initialize calibration factors
-  LEFT_CALIBRATION = leftCalibration;
-  RIGHT_CALIBRATION = rightCalibration;
+  // Set up how powerful each motor should be
+  LEFT_CALIBRATION = leftCalibration;   // Left motor power (0.0-1.0)
+  RIGHT_CALIBRATION = rightCalibration; // Right motor power (0.0-1.0)
   
-  // Initialize state variables
-  leftCurrentFunction = nullptr;
-  rightCurrentFunction = nullptr;
-  leftCurrentPower = 0;
-  rightCurrentPower = 0;
-  smoothEnabled = DEFAULT_SMOOTH_ENABLED;
+  // Start with motors not moving
+  leftCurrentFunction = nullptr;   // nullptr means "not moving"
+  rightCurrentFunction = nullptr;  // nullptr means "not moving"
+  leftCurrentPower = 0;            // 0 power = stopped
+  rightCurrentPower = 0;           // 0 power = stopped
+  smoothEnabled = DEFAULT_SMOOTH_ENABLED;  // Turn on smooth acceleration
   
-  // Initialize debug tracking variables
-  lastReportedLeftFunction = nullptr;
-  lastReportedRightFunction = nullptr;
-  lastReportedLeftPower = 0;
-  lastReportedRightPower = 0;
+  // Set up variables to track what we've told the computer
+  lastReportedLeftFunction = nullptr;   // No left motor movement reported yet
+  lastReportedRightFunction = nullptr;  // No right motor movement reported yet
+  lastReportedLeftPower = 0;            // No left motor power reported yet
+  lastReportedRightPower = 0;           // No right motor power reported yet
   
-  // Initialize timing variables for non-blocking acceleration
-  lastAccelUpdateTime = 0;
-  targetLeftPower = 0;
-  targetRightPower = 0;
-  currentAccelStep = 0;
-  totalAccelSteps = 0;
-  isAccelerating = false;
+  // Set up variables for smooth acceleration
+  lastAccelUpdateTime = 0;    // When we last updated acceleration
+  targetLeftPower = 0;        // Target power for left motor
+  targetRightPower = 0;       // Target power for right motor
+  currentAccelStep = 0;       // Which step we're on in acceleration
+  totalAccelSteps = 0;        // Total steps to take
+  isAccelerating = false;     // Not currently accelerating
 }
 
 /**
- * Initialize the motors
+ * Begin - Gets the motors ready to use
+ * 
+ * This is like turning on the robot's legs so they're ready to move.
  */
 void MotionMotors::begin() {
-  // Set up motor pins as outputs
+  // Set up all motor pins as outputs (they send signals, not receive them)
   pinMode(M_LEFT_A_PIN, OUTPUT);
   pinMode(M_LEFT_B_PIN, OUTPUT);
   pinMode(M_RIGHT_A_PIN, OUTPUT);
   pinMode(M_RIGHT_B_PIN, OUTPUT);
   
-  // Ensure motors are stopped
+  // Make sure all motors are stopped when we start
   stop();
 }
 
 /**
- * Independent motor control functions
+ * Motor control functions - These make the robot move
  */
 
 /**
- * Drives the left motor forward with optional smooth acceleration
+ * Makes the left wheel go forward
+ * 
+ * This is like telling the left leg to step forward.
  */
 void MotionMotors::leftForward(uint8_t power, bool smooth) {
-  // Direct control without smooth acceleration
+  // Tell the left motor to go forward at the specified power
   left_forward(power);
-  leftCurrentFunction = &MotionMotors::left_forward;
-  leftCurrentPower = power;
+  
+  // Remember what the motor is doing
+  leftCurrentFunction = &MotionMotors::left_forward;  // It's going forward
+  leftCurrentPower = power;                           // At this power level
 }
 
 /**
- * Drives the left motor backward with optional smooth acceleration
+ * Makes the left wheel go backward
+ * 
+ * This is like telling the left leg to step backward.
  */
 void MotionMotors::leftBackward(uint8_t power, bool smooth) {
-  // Direct control without smooth acceleration
+  // Tell the left motor to go backward at the specified power
   left_backward(power);
-  leftCurrentFunction = &MotionMotors::left_backward;
-  leftCurrentPower = power;
+  
+  // Remember what the motor is doing
+  leftCurrentFunction = &MotionMotors::left_backward;  // It's going backward
+  leftCurrentPower = power;                            // At this power level
 }
 
 /**
- * Drives the right motor forward with optional smooth acceleration
+ * Makes the right wheel go forward
+ * 
+ * This is like telling the right leg to step forward.
  */
 void MotionMotors::rightForward(uint8_t power, bool smooth) {
-  // Direct control without smooth acceleration
+  // Tell the right motor to go forward at the specified power
   right_forward(power);
-  rightCurrentFunction = &MotionMotors::right_forward;
-  rightCurrentPower = power;
+  
+  // Remember what the motor is doing
+  rightCurrentFunction = &MotionMotors::right_forward;  // It's going forward
+  rightCurrentPower = power;                            // At this power level
 }
 
 /**
- * Drives the right motor backward with optional smooth acceleration
+ * Makes the right wheel go backward
+ * 
+ * This is like telling the right leg to step backward.
  */
 void MotionMotors::rightBackward(uint8_t power, bool smooth) {
-  // Direct control without smooth acceleration
+  // Tell the right motor to go backward at the specified power
   right_backward(power);
-  rightCurrentFunction = &MotionMotors::right_backward;
-  rightCurrentPower = power;
+  
+  // Remember what the motor is doing
+  rightCurrentFunction = &MotionMotors::right_backward;  // It's going backward
+  rightCurrentPower = power;                             // At this power level
 }
 
 /**
- * Stops the left motor
+ * Stops the left wheel
+ * 
+ * This is like telling the left leg to stop moving.
  */
 void MotionMotors::leftStop() {
+  // Tell the left motor to stop
   left_stop();
-  leftCurrentFunction = nullptr;
-  leftCurrentPower = 0;
+  
+  // Remember that the motor is stopped
+  leftCurrentFunction = nullptr;  // nullptr means "not moving"
+  leftCurrentPower = 0;           // 0 power = stopped
 }
 
 /**
- * Stops the right motor
+ * Stops the right wheel
+ * 
+ * This is like telling the right leg to stop moving.
  */
 void MotionMotors::rightStop() {
+  // Tell the right motor to stop
   right_stop();
-  rightCurrentFunction = nullptr;
-  rightCurrentPower = 0;
+  
+  // Remember that the motor is stopped
+  rightCurrentFunction = nullptr;  // nullptr means "not moving"
+  rightCurrentPower = 0;           // 0 power = stopped
 }
 
 /**
- * Stops all motors immediately
+ * Stops both wheels immediately
+ * 
+ * This is like telling both legs to freeze in place.
  */
 void MotionMotors::stop() {
+  // Stop both motors
   leftStop();
   rightStop();
   
-  // Reset acceleration state
+  // Turn off any acceleration that might be happening
   isAccelerating = false;
 }
 
 /**
- * Enable or disable smooth acceleration/deceleration
+ * Turn smooth acceleration on or off
+ * 
+ * Smooth acceleration is like starting to walk slowly before running,
+ * instead of suddenly sprinting from a standstill.
  */
 void MotionMotors::setSmoothEnabled(bool enable) {
   smoothEnabled = enable;
 }
 
 /**
- * Check if smooth acceleration/deceleration is enabled
+ * Check if smooth acceleration is turned on
  */
 bool MotionMotors::isSmoothEnabled() {
   return smoothEnabled;
 }
 
 /**
- * Set the left motor calibration factor
+ * Set how powerful the left motor should be
+ * 
+ * This is useful if one motor is stronger than the other
+ * and you want to balance them.
  */
 void MotionMotors::setLeftCalibration(float calibration) {
-  // Constrain calibration to valid range (0.0 to 1.0)
+  // Make sure the calibration value is between 0.0 and 1.0
+  // (0.0 = 0% power, 1.0 = 100% power)
   LEFT_CALIBRATION = constrain(calibration, 0.0, 1.0);
 }
 
 /**
- * Set the right motor calibration factor
+ * Set how powerful the right motor should be
  */
 void MotionMotors::setRightCalibration(float calibration) {
-  // Constrain calibration to valid range (0.0 to 1.0)
+  // Make sure the calibration value is between 0.0 and 1.0
   RIGHT_CALIBRATION = constrain(calibration, 0.0, 1.0);
 }
 
 /**
- * Get the left motor calibration factor
+ * Get the current left motor power setting
  */
 float MotionMotors::getLeftCalibration() const {
   return LEFT_CALIBRATION;
 }
 
 /**
- * Get the right motor calibration factor
+ * Get the current right motor power setting
  */
 float MotionMotors::getRightCalibration() const {
   return RIGHT_CALIBRATION;
 }
 
 /**
- * Low-level motor control functions with calibration
+ * These are the behind-the-scenes functions that actually control the motors
  */
 
 /**
- * Drives the left motor forward
+ * Makes the left motor spin forward
+ * 
+ * This sends electrical signals to the motor to make it turn in the forward direction.
  */
 void MotionMotors::left_forward(uint8_t power) {
   // Apply the calibration factor to adjust the motor power
@@ -210,9 +252,9 @@ void MotionMotors::left_forward(uint8_t power) {
 }
 
 /**
- * Makes the left motor go backward
+ * Makes the left motor spin backward
  * 
- * This function tells the left motor to spin in reverse.
+ * This sends electrical signals to the motor to make it turn in the reverse direction.
  */
 void MotionMotors::left_backward(uint8_t power) {
   // Apply the calibration factor to adjust the motor power
@@ -248,7 +290,7 @@ void MotionMotors::left_backward(uint8_t power) {
 /**
  * Stops the left motor from moving
  * 
- * This function makes the left motor come to a stop by turning off power to both pins.
+ * This turns off all power to the left motor so it stops spinning.
  */
 void MotionMotors::left_stop() {
   // Turn off both direction pins to stop the motor
@@ -267,10 +309,9 @@ void MotionMotors::left_stop() {
 }
 
 /**
- * Makes the right motor go forward
+ * Makes the right motor spin forward
  * 
- * This function tells the right motor to spin forward, which makes
- * the right side of the robot move forward.
+ * This sends electrical signals to the motor to make it turn in the forward direction.
  */
 void MotionMotors::right_forward(uint8_t power) {
   // Apply the calibration factor to adjust the motor power
@@ -304,10 +345,9 @@ void MotionMotors::right_forward(uint8_t power) {
 }
 
 /**
- * Makes the right motor go backward
+ * Makes the right motor spin backward
  * 
- * This function tells the right motor to spin in reverse, which makes
- * the right side of the robot move backward.
+ * This sends electrical signals to the motor to make it turn in the reverse direction.
  */
 void MotionMotors::right_backward(uint8_t power) {
   // Apply the calibration factor to adjust the motor power
@@ -343,8 +383,7 @@ void MotionMotors::right_backward(uint8_t power) {
 /**
  * Stops the right motor from moving
  * 
- * This function makes the right motor come to a stop by turning off power to both pins.
- * When both motors stop, the whole robot stops moving.
+ * This turns off all power to the right motor so it stops spinning.
  */
 void MotionMotors::right_stop() {
   // Turn off both direction pins to stop the motor
@@ -365,11 +404,8 @@ void MotionMotors::right_stop() {
 /**
  * Makes motors speed up or slow down gradually (smoothly)
  * 
- * This function needs to be called over and over again in the main program loop.
- * It's like checking a timer - each time it runs, it updates the motor speed
- * a little bit until it reaches the final speed we want.
- * 
- * This makes the robot move more smoothly instead of jerking around.
+ * This is like how a car doesn't go from 0 to 60 mph instantly -
+ * it gradually speeds up over time. This makes the robot move more smoothly.
  */
 void MotionMotors::updateAcceleration() {
   // If we're not in the middle of a smooth speed change, do nothing
@@ -442,11 +478,8 @@ void MotionMotors::updateAcceleration() {
 /**
  * Begins a smooth speed change for the motors
  * 
- * This function sets up everything needed to start a gradual speed change.
- * It's like setting up a plan for how the motors will change speed over time.
- * 
- * After calling this, the updateAcceleration function will take care of
- * actually changing the speeds bit by bit.
+ * This is like planning a trip - we decide where we want to go
+ * and how we'll get there, but we haven't started moving yet.
  */
 void MotionMotors::startAcceleration(
     void (MotionMotors::*leftFunc)(uint8_t), uint8_t leftPower,
@@ -471,9 +504,8 @@ void MotionMotors::startAcceleration(
 /**
  * Gradually speeds up a motor from stopped to a target speed
  * 
- * This function makes a motor start moving smoothly instead of jerking
- * to full speed right away. It's like how a car gradually speeds up
- * rather than jumping instantly to 60 mph!
+ * This is like how you start walking before running - you don't
+ * instantly jump to full speed!
  */
 void MotionMotors::smoothAccelerate(void (MotionMotors::*moveFunction)(uint8_t), uint8_t targetPower,
                                    uint8_t steps, uint8_t delayMs) {
@@ -512,9 +544,8 @@ void MotionMotors::smoothAccelerate(void (MotionMotors::*moveFunction)(uint8_t),
 /**
  * Gradually slows down a motor until it stops
  * 
- * This function makes a motor slow down smoothly instead of stopping suddenly.
- * It's like how a car gradually slows down when you take your foot off the gas,
- * rather than slamming on the brakes!
+ * This is like slowing down to a stop when walking, instead of
+ * suddenly freezing in place.
  * 
  * Note: Currently this function just stops immediately, but in the future it
  * could be improved to slow down more gradually.
@@ -552,12 +583,8 @@ void MotionMotors::smoothDecelerate(void (MotionMotors::*moveFunction)(uint8_t),
 /**
  * Smoothly changes a motor from one direction/speed to another
  * 
- * This function helps a motor change what it's doing without jerky movements.
- * For example, if a motor is going forward and needs to go backward,
- * this function can help it slow down first, then start going backward.
- * 
- * It's like how a car doesn't instantly switch from driving forward to
- * driving backward - it has to stop first, then start going the other way.
+ * This is like changing from walking forward to walking backward -
+ * you need to slow down, stop, and then start going the other way.
  */
 void MotionMotors::smoothTransition(void (MotionMotors::*currentFunction)(uint8_t), uint8_t currentPower,
                                    void (MotionMotors::*targetFunction)(uint8_t), uint8_t targetPower,
