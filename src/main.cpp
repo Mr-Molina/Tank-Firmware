@@ -47,8 +47,8 @@ int ACC_DEADZONE_VALUE = ACC_DEADZONE;
 int ACC_PRECISION_VALUE = ACC_PRECISION;
 int USE_ACCELEROMETER_VALUE = USE_ACCELEROMETER;
 int EVENTS_VALUE = EVENTS;
-int DEBUG_PS4_DATA = DEBUG_PS4_DATA;
-int DEBUG_MOTOR_ACTIONS = DEBUG_MOTOR_ACTIONS;
+int DEBUG_PS4_DATA_VALUE = DEBUG_PS4_DATA;
+int DEBUG_MOTOR_ACTIONS_VALUE = DEBUG_MOTOR_ACTIONS;
 
 void setup()
 {
@@ -56,8 +56,8 @@ void setup()
     Serial.println("Starting initialization...");
     
     Serial.printf("Debug settings - PS4 Data: %s, Motor Actions: %s\n", 
-                 DEBUG_PS4_DATA ? "ON" : "OFF", 
-                 DEBUG_MOTOR_ACTIONS ? "ON" : "OFF");
+                 DEBUG_PS4_DATA_VALUE ? "ON" : "OFF", 
+                 DEBUG_MOTOR_ACTIONS_VALUE ? "ON" : "OFF");
 
     Serial.println("Initializing PS4 Controller and Motors...");
 
@@ -83,25 +83,25 @@ void loop()
         command.trim();
         
         if (command == "debug ps4 on") {
-            DEBUG_PS4_DATA = 1;
+            DEBUG_PS4_DATA_VALUE = 1;
             Serial.println("PS4 debug output enabled");
         } 
         else if (command == "debug ps4 off") {
-            DEBUG_PS4_DATA = 0;
+            DEBUG_PS4_DATA_VALUE = 0;
             Serial.println("PS4 debug output disabled");
         }
         else if (command == "debug motor on") {
-            DEBUG_MOTOR_ACTIONS = 1;
+            DEBUG_MOTOR_ACTIONS_VALUE = 1;
             Serial.println("Motor debug output enabled");
         }
         else if (command == "debug motor off") {
-            DEBUG_MOTOR_ACTIONS = 0;
+            DEBUG_MOTOR_ACTIONS_VALUE = 0;
             Serial.println("Motor debug output disabled");
         }
         else if (command == "debug status") {
             Serial.printf("Debug status - PS4 Data: %s, Motor Actions: %s\n", 
-                         DEBUG_PS4_DATA ? "ON" : "OFF", 
-                         DEBUG_MOTOR_ACTIONS ? "ON" : "OFF");
+                         DEBUG_PS4_DATA_VALUE ? "ON" : "OFF", 
+                         DEBUG_MOTOR_ACTIONS_VALUE ? "ON" : "OFF");
         }
     }
 }

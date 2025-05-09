@@ -11,7 +11,7 @@ extern int ACC_DEADZONE_VALUE;
 extern int ACC_PRECISION_VALUE;
 extern int USE_ACCELEROMETER_VALUE;
 extern int EVENTS_VALUE;
-extern int DEBUG_PS4_DATA;  // Debug flag for PS4 controller data
+extern int DEBUG_PS4_DATA_VALUE;  // Debug flag for PS4 controller data
 
 // Static instance pointer for callbacks
 PS4Remote* PS4Remote::_instance = nullptr;
@@ -86,11 +86,11 @@ int PS4Remote::applyDeadzone(int value, int deadzone) {
 // Function to reduce precision of accelerometer values
 int PS4Remote::reduceAccPrecision(int value) {
     // First apply deadzone
-    if (abs(value) < ACC_DEADZONE_VALUE) {
+    if (abs(value) < DEFAULT_ACC_DEADZONE) {
         return 0;
     }
     // Then reduce precision by dividing and multiplying
-    return (value / ACC_PRECISION_VALUE) * ACC_PRECISION_VALUE;
+    return (value / DEFAULT_ACC_PRECISION) * DEFAULT_ACC_PRECISION;
 }
 
 void PS4Remote::update() {
@@ -187,7 +187,7 @@ void PS4Remote::update() {
             currentState.dataChanged = true;
 
             // Only print debug data if enabled
-            if (DEBUG_PS4_DATA) {
+            if (DEBUG_PS4_DATA_VALUE) {
                 // Print all data in a standardized format with columns
                 // Face buttons
                 Serial.printf("BTN: SQ:%-3s TR:%-3s X:%-3s O:%-3s | ",
@@ -270,7 +270,7 @@ void PS4Remote::update() {
             l1d || l1u || r1d || r1u || l3d || l3u || r3d || r3u) {
             
             // Only print event debug data if enabled
-            if (DEBUG_PS4_DATA) {
+            if (DEBUG_PS4_DATA_VALUE) {
                 Serial.printf("EVENT: ");
                 // Face buttons
                 if (sqd) Serial.printf("SQUARE DOWN ");
