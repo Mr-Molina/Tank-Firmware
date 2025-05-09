@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": ".git"
+		},
+		{
+			"path": ".pio"
+		},
+		{
+			"path": ".vscode"
+		},
+		{
+			"path": "include"
+		},
+		{
+			"path": "lib"
+		},
+		{
+			"path": "src"
+		}
+	],
+	"settings": {}
+}
