@@ -115,6 +115,34 @@ public:
      * for non-blocking acceleration to work
      */
     void updateAcceleration();
+    
+    /**
+     * Set the left motor calibration factor
+     * 
+     * @param calibration Calibration factor (0.0 to 1.0)
+     */
+    void setLeftCalibration(float calibration);
+    
+    /**
+     * Set the right motor calibration factor
+     * 
+     * @param calibration Calibration factor (0.0 to 1.0)
+     */
+    void setRightCalibration(float calibration);
+    
+    /**
+     * Get the left motor calibration factor
+     * 
+     * @return Current left motor calibration factor
+     */
+    float getLeftCalibration() const;
+    
+    /**
+     * Get the right motor calibration factor
+     * 
+     * @return Current right motor calibration factor
+     */
+    float getRightCalibration() const;
 
 private:
     // Low-level motor control functions
@@ -229,6 +257,12 @@ private:
     // Motor calibration factors
     float LEFT_CALIBRATION;
     float RIGHT_CALIBRATION;
+    
+    // Variables to track last reported motor state for debug messages
+    uint8_t lastReportedLeftPower;
+    uint8_t lastReportedRightPower;
+    void (MotionMotors::*lastReportedLeftFunction)(uint8_t);
+    void (MotionMotors::*lastReportedRightFunction)(uint8_t);
 };
 
 #endif // MOTION_MOTORS_H

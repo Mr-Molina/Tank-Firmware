@@ -25,6 +25,12 @@ MotionMotors::MotionMotors(uint8_t leftA, uint8_t leftB, uint8_t rightA, uint8_t
   rightCurrentPower = 0;
   smoothEnabled = DEFAULT_SMOOTH_ENABLED;
   
+  // Initialize debug tracking variables
+  lastReportedLeftFunction = nullptr;
+  lastReportedRightFunction = nullptr;
+  lastReportedLeftPower = 0;
+  lastReportedRightPower = 0;
+  
   // Initialize timing variables for non-blocking acceleration
   lastAccelUpdateTime = 0;
   targetLeftPower = 0;
@@ -136,6 +142,36 @@ bool MotionMotors::isSmoothEnabled() {
 }
 
 /**
+ * Set the left motor calibration factor
+ */
+void MotionMotors::setLeftCalibration(float calibration) {
+  // Constrain calibration to valid range (0.0 to 1.0)
+  LEFT_CALIBRATION = constrain(calibration, 0.0, 1.0);
+}
+
+/**
+ * Set the right motor calibration factor
+ */
+void MotionMotors::setRightCalibration(float calibration) {
+  // Constrain calibration to valid range (0.0 to 1.0)
+  RIGHT_CALIBRATION = constrain(calibration, 0.0, 1.0);
+}
+
+/**
+ * Get the left motor calibration factor
+ */
+float MotionMotors::getLeftCalibration() const {
+  return LEFT_CALIBRATION;
+}
+
+/**
+ * Get the right motor calibration factor
+ */
+float MotionMotors::getRightCalibration() const {
+  return RIGHT_CALIBRATION;
+}
+
+/**
  * Low-level motor control functions with calibration
  */
 
@@ -147,9 +183,19 @@ void MotionMotors::left_forward(uint8_t power) {
   analogWrite(M_LEFT_A_PIN, calibratedPower);
   analogWrite(M_LEFT_B_PIN, 0);
   
-  // Debug output if enabled
+  // Debug output if enabled and state has changed
   if (DEBUG_MOTOR_ACTIONS_VALUE) {
-    Serial.printf("MOTOR: LEFT FORWARD (Power: %d)\n", power);
+    // Only report if direction changed or power changed by more than 5%
+    bool directionChanged = (lastReportedLeftFunction != &MotionMotors::left_forward);
+    bool powerChanged = (abs((int)power - (int)lastReportedLeftPower) > 5);
+    
+    if (directionChanged || powerChanged) {
+      Serial.printf("MOTOR: LEFT FORWARD (Power: %d) [Left Joystick]\n", power);
+      
+      // Update last reported state
+      lastReportedLeftFunction = &MotionMotors::left_forward;
+      lastReportedLeftPower = power;
+    }
   }
 }
 
@@ -161,9 +207,19 @@ void MotionMotors::left_backward(uint8_t power) {
   analogWrite(M_LEFT_A_PIN, 0);
   analogWrite(M_LEFT_B_PIN, calibratedPower);
   
-  // Debug output if enabled
+  // Debug output if enabled and state has changed
   if (DEBUG_MOTOR_ACTIONS_VALUE) {
-    Serial.printf("MOTOR: LEFT BACKWARD (Power: %d)\n", power);
+    // Only report if direction changed or power changed by more than 5%
+    bool directionChanged = (lastReportedLeftFunction != &MotionMotors::left_backward);
+    bool powerChanged = (abs((int)power - (int)lastReportedLeftPower) > 5);
+    
+    if (directionChanged || powerChanged) {
+      Serial.printf("MOTOR: LEFT BACKWARD (Power: %d) [Left Joystick]\n", power);
+      
+      // Update last reported state
+      lastReportedLeftFunction = &MotionMotors::left_backward;
+      lastReportedLeftPower = power;
+    }
   }
 }
 
@@ -174,9 +230,13 @@ void MotionMotors::left_stop() {
   analogWrite(M_LEFT_A_PIN, 0);
   analogWrite(M_LEFT_B_PIN, 0);
   
-  // Debug output if enabled
-  if (DEBUG_MOTOR_ACTIONS_VALUE) {
-    Serial.println("MOTOR: LEFT STOP");
+  // Only report stop if we were previously moving
+  if (DEBUG_MOTOR_ACTIONS_VALUE && lastReportedLeftFunction != nullptr) {
+    Serial.println("MOTOR: LEFT STOP [Left Joystick]");
+    
+    // Update last reported state
+    lastReportedLeftFunction = nullptr;
+    lastReportedLeftPower = 0;
   }
 }
 
@@ -188,9 +248,19 @@ void MotionMotors::right_forward(uint8_t power) {
   analogWrite(M_RIGHT_A_PIN, calibratedPower);
   analogWrite(M_RIGHT_B_PIN, 0);
   
-  // Debug output if enabled
+  // Debug output if enabled and state has changed
   if (DEBUG_MOTOR_ACTIONS_VALUE) {
-    Serial.printf("MOTOR: RIGHT FORWARD (Power: %d)\n", power);
+    // Only report if direction changed or power changed by more than 5%
+    bool directionChanged = (lastReportedRightFunction != &MotionMotors::right_forward);
+    bool powerChanged = (abs((int)power - (int)lastReportedRightPower) > 5);
+    
+    if (directionChanged || powerChanged) {
+      Serial.printf("MOTOR: RIGHT FORWARD (Power: %d) [Right Joystick]\n", power);
+      
+      // Update last reported state
+      lastReportedRightFunction = &MotionMotors::right_forward;
+      lastReportedRightPower = power;
+    }
   }
 }
 
@@ -202,9 +272,19 @@ void MotionMotors::right_backward(uint8_t power) {
   analogWrite(M_RIGHT_A_PIN, 0);
   analogWrite(M_RIGHT_B_PIN, calibratedPower);
   
-  // Debug output if enabled
+  // Debug output if enabled and state has changed
   if (DEBUG_MOTOR_ACTIONS_VALUE) {
-    Serial.printf("MOTOR: RIGHT BACKWARD (Power: %d)\n", power);
+    // Only report if direction changed or power changed by more than 5%
+    bool directionChanged = (lastReportedRightFunction != &MotionMotors::right_backward);
+    bool powerChanged = (abs((int)power - (int)lastReportedRightPower) > 5);
+    
+    if (directionChanged || powerChanged) {
+      Serial.printf("MOTOR: RIGHT BACKWARD (Power: %d) [Right Joystick]\n", power);
+      
+      // Update last reported state
+      lastReportedRightFunction = &MotionMotors::right_backward;
+      lastReportedRightPower = power;
+    }
   }
 }
 
@@ -215,9 +295,13 @@ void MotionMotors::right_stop() {
   analogWrite(M_RIGHT_A_PIN, 0);
   analogWrite(M_RIGHT_B_PIN, 0);
   
-  // Debug output if enabled
-  if (DEBUG_MOTOR_ACTIONS_VALUE) {
-    Serial.println("MOTOR: RIGHT STOP");
+  // Only report stop if we were previously moving
+  if (DEBUG_MOTOR_ACTIONS_VALUE && lastReportedRightFunction != nullptr) {
+    Serial.println("MOTOR: RIGHT STOP [Right Joystick]");
+    
+    // Update last reported state
+    lastReportedRightFunction = nullptr;
+    lastReportedRightPower = 0;
   }
 }
 

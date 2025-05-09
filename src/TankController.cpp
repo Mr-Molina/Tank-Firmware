@@ -43,11 +43,16 @@ TankController::TankController(
         leftMotorCalibration, rightMotorCalibration
     ),
     lastShareState(false),
+    lastUpState(false),
+    lastDownState(false),
+    lastTriangleState(false),
+    lastXState(false),
     // Initialize timing variables
     lastUpdateTime(0),
     lastButtonCheckTime(0),
     lastEmergencyStopTime(0),
-    lastShareButtonTime(0)
+    lastShareButtonTime(0),
+    lastCalibrationButtonTime(0)
 {
     // Store instance pointer for callbacks
     instance = this;
@@ -71,6 +76,7 @@ void TankController::begin() {
     lastButtonCheckTime = currentTime;
     lastEmergencyStopTime = currentTime;
     lastShareButtonTime = currentTime;
+    lastCalibrationButtonTime = currentTime;
     
     Serial.println("TankController initialized with timing control");
 }
@@ -124,6 +130,71 @@ void TankController::handleButtonControls(PS4Remote::ControllerState state) {
         lastShareButtonTime = currentTime;
     }
     lastShareState = state.share;
+    
+    // Handle motor calibration adjustments
+    if (currentTime - lastCalibrationButtonTime > DEBOUNCE_TIME) {
+        // D-pad Up: Increase left motor calibration
+        if (state.up && !lastUpState) {
+            float currentCalibration = motors.getLeftCalibration();
+            float newCalibration = min(currentCalibration + CALIBRATION_STEP, 1.0f);
+            motors.setLeftCalibration(newCalibration);
+            
+            // Only output debug message if calibration debug is enabled
+            extern int DEBUG_CALIBRATION_VALUE;
+            if (DEBUG_CALIBRATION_VALUE) {
+                Serial.printf("LEFT MOTOR CALIBRATION: %.2f -> %.2f\n", currentCalibration, newCalibration);
+            }
+            lastCalibrationButtonTime = currentTime;
+        }
+        
+        // D-pad Down: Decrease left motor calibration
+        if (state.down && !lastDownState) {
+            float currentCalibration = motors.getLeftCalibration();
+            float newCalibration = max(currentCalibration - CALIBRATION_STEP, 0.0f);
+            motors.setLeftCalibration(newCalibration);
+            
+            // Only output debug message if calibration debug is enabled
+            extern int DEBUG_CALIBRATION_VALUE;
+            if (DEBUG_CALIBRATION_VALUE) {
+                Serial.printf("LEFT MOTOR CALIBRATION: %.2f -> %.2f\n", currentCalibration, newCalibration);
+            }
+            lastCalibrationButtonTime = currentTime;
+        }
+        
+        // Triangle: Increase right motor calibration
+        if (state.triangle && !lastTriangleState) {
+            float currentCalibration = motors.getRightCalibration();
+            float newCalibration = min(currentCalibration + CALIBRATION_STEP, 1.0f);
+            motors.setRightCalibration(newCalibration);
+            
+            // Only output debug message if calibration debug is enabled
+            extern int DEBUG_CALIBRATION_VALUE;
+            if (DEBUG_CALIBRATION_VALUE) {
+                Serial.printf("RIGHT MOTOR CALIBRATION: %.2f -> %.2f\n", currentCalibration, newCalibration);
+            }
+            lastCalibrationButtonTime = currentTime;
+        }
+        
+        // X: Decrease right motor calibration
+        if (state.cross && !lastXState) {
+            float currentCalibration = motors.getRightCalibration();
+            float newCalibration = max(currentCalibration - CALIBRATION_STEP, 0.0f);
+            motors.setRightCalibration(newCalibration);
+            
+            // Only output debug message if calibration debug is enabled
+            extern int DEBUG_CALIBRATION_VALUE;
+            if (DEBUG_CALIBRATION_VALUE) {
+                Serial.printf("RIGHT MOTOR CALIBRATION: %.2f -> %.2f\n", currentCalibration, newCalibration);
+            }
+            lastCalibrationButtonTime = currentTime;
+        }
+    }
+    
+    // Update button states
+    lastUpState = state.up;
+    lastDownState = state.down;
+    lastTriangleState = state.triangle;
+    lastXState = state.cross;
 }
 
 // Check if it's time to update the motor control
@@ -161,34 +232,38 @@ unsigned long TankController::getUpdateInterval() const {
     return UPDATE_INTERVAL;
 }
 
-// Function to control motors based on joystick input
+// Get the current left motor calibration value
+float TankController::getLeftMotorCalibration() const {
+    return motors.getLeftCalibration();
+}
+
+// Get the current right motor calibration value
+float TankController::getRightMotorCalibration() const {
+    return motors.getRightCalibration();
+}
+
+// Function to control motors based on joystick input - Tank drive style
 void TankController::controlMotorsWithJoystick(PS4Remote::ControllerState state) {
     // Get joystick values (invert Y so positive is forward)
-    int leftY = -state.ly;
-    int rightX = state.rx;
+    int leftY = -state.ly;  // Left joystick Y-axis controls left motor
+    int rightY = -state.ry; // Right joystick Y-axis controls right motor
     
     // Initialize motor speeds
     int leftMotorSpeed = 0;
     int rightMotorSpeed = 0;
 
-    // Process forward/backward movement if beyond deadzone
+    // Process left motor forward/backward movement if beyond deadzone
     if (abs(leftY) > deadzone) {
-        int baseSpeed = map(abs(leftY), deadzone, 127, 0, maxMotorSpeed);
+        leftMotorSpeed = map(abs(leftY), deadzone, 127, 0, maxMotorSpeed);
         // Apply direction (positive = forward, negative = backward)
-        leftMotorSpeed = rightMotorSpeed = (leftY > 0) ? baseSpeed : -baseSpeed;
+        leftMotorSpeed = (leftY > 0) ? leftMotorSpeed : -leftMotorSpeed;
     }
 
-    // Apply turning if beyond deadzone
-    if (abs(rightX) > deadzone) {
-        int turnAdjustment = map(abs(rightX), deadzone, 127, 0, maxMotorSpeed * turnSpeedFactor);
-        // Apply turn adjustment (positive = right turn, negative = left turn)
-        if (rightX > 0) {
-            leftMotorSpeed += turnAdjustment;
-            rightMotorSpeed -= turnAdjustment;
-        } else {
-            leftMotorSpeed -= turnAdjustment;
-            rightMotorSpeed += turnAdjustment;
-        }
+    // Process right motor forward/backward movement if beyond deadzone
+    if (abs(rightY) > deadzone) {
+        rightMotorSpeed = map(abs(rightY), deadzone, 127, 0, maxMotorSpeed);
+        // Apply direction (positive = forward, negative = backward)
+        rightMotorSpeed = (rightY > 0) ? rightMotorSpeed : -rightMotorSpeed;
     }
 
     // Constrain speeds and apply to motors
@@ -209,11 +284,29 @@ void TankController::controlMotorsWithJoystick(PS4Remote::ControllerState state)
 // Static callback for controller connection
 void TankController::onConnect() {
     Serial.println("\n*** PS4 Controller Connected ***");
+    
+    // Reset the disconnect flag when controller reconnects
+    extern bool wasDisconnected;
+    wasDisconnected = false;
 }
+
+// Global variable to track disconnect state
+bool wasDisconnected = false;
 
 // Static callback for controller disconnection
 void TankController::onDisconnect() {
-    Serial.println("\n*** PS4 Controller Disconnected ***");
+    // Only show disconnect message once per connection session
+    if (!wasDisconnected) {
+        Serial.println("\n*** PS4 Controller Disconnected ***");
+        
+        // If debug is enabled, show emergency stop message
+        extern int DEBUG_MOTOR_ACTIONS_VALUE;
+        if (DEBUG_MOTOR_ACTIONS_VALUE) {
+            Serial.println("MOTOR: EMERGENCY STOP (CONTROLLER DISCONNECTED)");
+        }
+        
+        wasDisconnected = true;
+    }
     
     // Stop motors when controller disconnects for safety
     if (instance) {

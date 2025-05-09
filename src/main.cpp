@@ -13,8 +13,9 @@
 #define ACC_PRECISION 1000  // Accelerometer precision divisor
 
 // Debug flags
-#define DEBUG_PS4_DATA 1    // Enable/disable PS4 controller data debug messages
+#define DEBUG_PS4_DATA 0    // Enable/disable PS4 controller data debug messages
 #define DEBUG_MOTOR_ACTIONS 1 // Enable/disable motor action debug messages
+#define DEBUG_CALIBRATION 1   // Enable/disable calibration adjustment debug messages
 
 // Motor pin definitions
 #define LEFT_MOTOR_PIN_A 18
@@ -49,15 +50,17 @@ int USE_ACCELEROMETER_VALUE = USE_ACCELEROMETER;
 int EVENTS_VALUE = EVENTS;
 int DEBUG_PS4_DATA_VALUE = DEBUG_PS4_DATA;
 int DEBUG_MOTOR_ACTIONS_VALUE = DEBUG_MOTOR_ACTIONS;
+int DEBUG_CALIBRATION_VALUE = DEBUG_CALIBRATION;
 
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Starting initialization...");
     
-    Serial.printf("Debug settings - PS4 Data: %s, Motor Actions: %s\n", 
+    Serial.printf("Debug settings - PS4 Data: %s, Motor Actions: %s, Calibration: %s\n", 
                  DEBUG_PS4_DATA_VALUE ? "ON" : "OFF", 
-                 DEBUG_MOTOR_ACTIONS_VALUE ? "ON" : "OFF");
+                 DEBUG_MOTOR_ACTIONS_VALUE ? "ON" : "OFF",
+                 DEBUG_CALIBRATION_VALUE ? "ON" : "OFF");
 
     Serial.println("Initializing PS4 Controller and Motors...");
 
@@ -99,9 +102,24 @@ void loop()
             Serial.println("Motor debug output disabled");
         }
         else if (command == "debug status") {
-            Serial.printf("Debug status - PS4 Data: %s, Motor Actions: %s\n", 
+            Serial.printf("Debug status - PS4 Data: %s, Motor Actions: %s, Calibration: %s\n", 
                          DEBUG_PS4_DATA_VALUE ? "ON" : "OFF", 
-                         DEBUG_MOTOR_ACTIONS_VALUE ? "ON" : "OFF");
+                         DEBUG_MOTOR_ACTIONS_VALUE ? "ON" : "OFF",
+                         DEBUG_CALIBRATION_VALUE ? "ON" : "OFF");
+        }
+        else if (command == "debug calibration on") {
+            DEBUG_CALIBRATION_VALUE = 1;
+            Serial.println("Calibration debug output enabled");
+        }
+        else if (command == "debug calibration off") {
+            DEBUG_CALIBRATION_VALUE = 0;
+            Serial.println("Calibration debug output disabled");
+        }
+        else if (command == "calibration status") {
+            // Get current calibration values from the tank controller
+            float leftCal = tank.getLeftMotorCalibration();
+            float rightCal = tank.getRightMotorCalibration();
+            Serial.printf("Motor Calibration - Left: %.2f, Right: %.2f\n", leftCal, rightCal);
         }
     }
 }

@@ -35,12 +35,20 @@ private:
 
     // State tracking
     bool lastShareState;
+    bool lastUpState;
+    bool lastDownState;
+    bool lastTriangleState;
+    bool lastXState;
 
     // Timing control variables
     unsigned long lastUpdateTime;
     unsigned long lastButtonCheckTime;
     unsigned long lastEmergencyStopTime;
     unsigned long lastShareButtonTime;
+    unsigned long lastCalibrationButtonTime;
+    
+    // Calibration adjustment step
+    const float CALIBRATION_STEP = 0.05;
 
     // Default timing intervals (in milliseconds)
     static const unsigned long UPDATE_INTERVAL;       // 50Hz control loop
@@ -88,6 +96,20 @@ public:
      * @return Current update interval in milliseconds
      */
     unsigned long getUpdateInterval() const;
+    
+    /**
+     * Gets the current left motor calibration value
+     * 
+     * @return Current left motor calibration factor
+     */
+    float getLeftMotorCalibration() const;
+    
+    /**
+     * Gets the current right motor calibration value
+     * 
+     * @return Current right motor calibration factor
+     */
+    float getRightMotorCalibration() const;
 };
 
 #endif // TANK_CONTROLLER_H
