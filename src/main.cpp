@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "TankController.h"
-#include "esp_task_wdt.h"
 
 // Configuration flags
 #define EVENTS 1
@@ -13,20 +12,21 @@
 #define ACC_DEADZONE 1000   // Accelerometer deadzone
 #define ACC_PRECISION 1000  // Accelerometer precision divisor
 
+// Debug flags
+#define DEBUG_PS4_DATA 1    // Enable/disable PS4 controller data debug messages
+#define DEBUG_MOTOR_ACTIONS 1 // Enable/disable motor action debug messages
+
 // Motor pin definitions
-#define LEFT_MOTOR_PIN_A 5
-#define LEFT_MOTOR_PIN_B 6
-#define RIGHT_MOTOR_PIN_A 9
-#define RIGHT_MOTOR_PIN_B 10
+#define LEFT_MOTOR_PIN_A 18
+#define LEFT_MOTOR_PIN_B 19
+#define RIGHT_MOTOR_PIN_A 16
+#define RIGHT_MOTOR_PIN_B 17
 
 // Motor settings
 #define LEFT_MOTOR_CALIBRATION 1.0
 #define RIGHT_MOTOR_CALIBRATION 1.0
 #define MAX_MOTOR_SPEED 255
 #define TURN_SPEED_FACTOR 0.7
-
-// Watchdog timeout in seconds
-#define WDT_TIMEOUT 5
 
 // Create controller instance
 TankController tank(
@@ -40,19 +40,27 @@ TankController tank(
     LEFT_MOTOR_CALIBRATION, RIGHT_MOTOR_CALIBRATION,
     MAX_MOTOR_SPEED, TURN_SPEED_FACTOR);
 
+// Make configuration flags accessible to other modules
+int DEADZONE_VALUE = DEADZONE;
+int GYRO_DEADZONE_VALUE = GYRO_DEADZONE;
+int ACC_DEADZONE_VALUE = ACC_DEADZONE;
+int ACC_PRECISION_VALUE = ACC_PRECISION;
+int USE_ACCELEROMETER_VALUE = USE_ACCELEROMETER;
+int EVENTS_VALUE = EVENTS;
+int DEBUG_PS4_DATA = DEBUG_PS4_DATA;
+int DEBUG_MOTOR_ACTIONS = DEBUG_MOTOR_ACTIONS;
+
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Starting initialization...");
     
-    // Initialize watchdog with timeout
-    Serial.println("Setting up watchdog timer...");
-    esp_task_wdt_init(WDT_TIMEOUT, true);
-    esp_task_wdt_add(NULL);
-    Serial.println("Watchdog timer initialized");
-    
+    Serial.printf("Debug settings - PS4 Data: %s, Motor Actions: %s\n", 
+                 DEBUG_PS4_DATA ? "ON" : "OFF", 
+                 DEBUG_MOTOR_ACTIONS ? "ON" : "OFF");
+
     Serial.println("Initializing PS4 Controller and Motors...");
-    
+
     // Initialize the tank controller
     tank.begin();
 
@@ -61,16 +69,39 @@ void setup()
 
 void loop()
 {
-    // Reset watchdog timer
-    esp_task_wdt_reset();
-    
     // Update controller and handle all motor control
     // The timing is now handled internally by the TankController class
     tank.update();
 
-    // No delay needed here - the controller handles its own timing
-    // This allows the loop to run as fast as possible for other tasks
+    // Add a small delay to prevent the ESP32 from running too fast
+    // This helps prevent potential issues with the Bluetooth stack
+    delay(1);
 
-    // Other non-blocking code can be added here if needed
-    // For example, reading sensors, updating displays, etc.
+    // Check for debug toggle commands from Serial
+    if (Serial.available() > 0) {
+        String command = Serial.readStringUntil('\n');
+        command.trim();
+        
+        if (command == "debug ps4 on") {
+            DEBUG_PS4_DATA = 1;
+            Serial.println("PS4 debug output enabled");
+        } 
+        else if (command == "debug ps4 off") {
+            DEBUG_PS4_DATA = 0;
+            Serial.println("PS4 debug output disabled");
+        }
+        else if (command == "debug motor on") {
+            DEBUG_MOTOR_ACTIONS = 1;
+            Serial.println("Motor debug output enabled");
+        }
+        else if (command == "debug motor off") {
+            DEBUG_MOTOR_ACTIONS = 0;
+            Serial.println("Motor debug output disabled");
+        }
+        else if (command == "debug status") {
+            Serial.printf("Debug status - PS4 Data: %s, Motor Actions: %s\n", 
+                         DEBUG_PS4_DATA ? "ON" : "OFF", 
+                         DEBUG_MOTOR_ACTIONS ? "ON" : "OFF");
+        }
+    }
 }

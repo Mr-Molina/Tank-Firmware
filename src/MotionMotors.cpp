@@ -136,6 +136,9 @@ bool MotionMotors::isSmoothEnabled() {
  * Low-level motor control functions with calibration
  */
 
+// External reference to debug flag defined in main.cpp
+extern int DEBUG_MOTOR_ACTIONS;
+
 /**
  * Drives the left motor forward
  */
@@ -143,6 +146,11 @@ void MotionMotors::left_forward(uint8_t power) {
   uint8_t calibratedPower = power * LEFT_CALIBRATION;
   analogWrite(M_LEFT_A_PIN, calibratedPower);
   analogWrite(M_LEFT_B_PIN, 0);
+  
+  // Debug output if enabled
+  if (DEBUG_MOTOR_ACTIONS) {
+    Serial.printf("MOTOR: LEFT FORWARD (Power: %d)\n", power);
+  }
 }
 
 /**
@@ -152,6 +160,11 @@ void MotionMotors::left_backward(uint8_t power) {
   uint8_t calibratedPower = power * LEFT_CALIBRATION;
   analogWrite(M_LEFT_A_PIN, 0);
   analogWrite(M_LEFT_B_PIN, calibratedPower);
+  
+  // Debug output if enabled
+  if (DEBUG_MOTOR_ACTIONS) {
+    Serial.printf("MOTOR: LEFT BACKWARD (Power: %d)\n", power);
+  }
 }
 
 /**
@@ -160,6 +173,11 @@ void MotionMotors::left_backward(uint8_t power) {
 void MotionMotors::left_stop() {
   analogWrite(M_LEFT_A_PIN, 0);
   analogWrite(M_LEFT_B_PIN, 0);
+  
+  // Debug output if enabled
+  if (DEBUG_MOTOR_ACTIONS) {
+    Serial.println("MOTOR: LEFT STOP");
+  }
 }
 
 /**
@@ -169,6 +187,11 @@ void MotionMotors::right_forward(uint8_t power) {
   uint8_t calibratedPower = power * RIGHT_CALIBRATION;
   analogWrite(M_RIGHT_A_PIN, calibratedPower);
   analogWrite(M_RIGHT_B_PIN, 0);
+  
+  // Debug output if enabled
+  if (DEBUG_MOTOR_ACTIONS) {
+    Serial.printf("MOTOR: RIGHT FORWARD (Power: %d)\n", power);
+  }
 }
 
 /**
@@ -178,6 +201,11 @@ void MotionMotors::right_backward(uint8_t power) {
   uint8_t calibratedPower = power * RIGHT_CALIBRATION;
   analogWrite(M_RIGHT_A_PIN, 0);
   analogWrite(M_RIGHT_B_PIN, calibratedPower);
+  
+  // Debug output if enabled
+  if (DEBUG_MOTOR_ACTIONS) {
+    Serial.printf("MOTOR: RIGHT BACKWARD (Power: %d)\n", power);
+  }
 }
 
 /**
@@ -186,6 +214,11 @@ void MotionMotors::right_backward(uint8_t power) {
 void MotionMotors::right_stop() {
   analogWrite(M_RIGHT_A_PIN, 0);
   analogWrite(M_RIGHT_B_PIN, 0);
+  
+  // Debug output if enabled
+  if (DEBUG_MOTOR_ACTIONS) {
+    Serial.println("MOTOR: RIGHT STOP");
+  }
 }
 
 /**

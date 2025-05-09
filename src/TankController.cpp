@@ -92,6 +92,9 @@ void TankController::update() {
             // No controller connected, ensure motors are stopped
             motors.stop();
         }
+        
+        // Yield to allow ESP32 background tasks to run
+        yield();
     }
     
     // Check buttons at a different rate to avoid overwhelming the system

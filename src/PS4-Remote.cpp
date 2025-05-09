@@ -4,7 +4,14 @@
 #include "esp_gap_bt_api.h"
 #include "esp_err.h"
 
-// Using constants defined in PS4-Remote.h
+// External references to configuration flags defined in main.cpp
+extern int DEADZONE_VALUE;
+extern int GYRO_DEADZONE_VALUE;
+extern int ACC_DEADZONE_VALUE;
+extern int ACC_PRECISION_VALUE;
+extern int USE_ACCELEROMETER_VALUE;
+extern int EVENTS_VALUE;
+extern int DEBUG_PS4_DATA;  // Debug flag for PS4 controller data
 
 // Static instance pointer for callbacks
 PS4Remote* PS4Remote::_instance = nullptr;
@@ -179,46 +186,49 @@ void PS4Remote::update() {
         if (valuesChanged) {
             currentState.dataChanged = true;
 
-            // Print all data in a standardized format with columns
-            // Face buttons
-            Serial.printf("BTN: SQ:%-3s TR:%-3s X:%-3s O:%-3s | ",
-                          currentState.square ? "ON" : "OFF",
-                          currentState.triangle ? "ON" : "OFF",
-                          currentState.cross ? "ON" : "OFF",
-                          currentState.circle ? "ON" : "OFF");
-
-            // D-pad
-            Serial.printf("DPAD: U:%-3s D:%-3s L:%-3s R:%-3s | ",
-                          currentState.up ? "ON" : "OFF",
-                          currentState.down ? "ON" : "OFF",
-                          currentState.left ? "ON" : "OFF",
-                          currentState.right ? "ON" : "OFF");
-
-            // Shoulder buttons and triggers
-            Serial.printf("SHLD: L1:%-3s R1:%-3s L2:%3d R2:%3d | ",
-                          currentState.l1 ? "ON" : "OFF",
-                          currentState.r1 ? "ON" : "OFF",
-                          currentState.l2,
-                          currentState.r2);
-
-            // Thumbstick buttons (L3/R3)
-            Serial.printf("THUMB: L3:%-3s R3:%-3s | ",
-                          currentState.l3 ? "ON" : "OFF",
-                          currentState.r3 ? "ON" : "OFF");
-
-            Serial.printf("JOY: LX:%4d LY:%4d RX:%4d RY:%4d | ",
-                          currentState.lx, currentState.ly, 
-                          currentState.rx, currentState.ry);
-
-            Serial.printf("GYRO: X:%5d Y:%5d Z:%5d",
-                          currentState.gx, currentState.gy, currentState.gz);
-
-            if (USE_ACCELEROMETER_VALUE) {
-                Serial.printf(" | ACC: X:%5d Y:%5d Z:%5d",
-                              currentState.ax, currentState.ay, currentState.az);
+            // Only print debug data if enabled
+            if (DEBUG_PS4_DATA) {
+                // Print all data in a standardized format with columns
+                // Face buttons
+                Serial.printf("BTN: SQ:%-3s TR:%-3s X:%-3s O:%-3s | ",
+                              currentState.square ? "ON" : "OFF",
+                              currentState.triangle ? "ON" : "OFF",
+                              currentState.cross ? "ON" : "OFF",
+                              currentState.circle ? "ON" : "OFF");
+    
+                // D-pad
+                Serial.printf("DPAD: U:%-3s D:%-3s L:%-3s R:%-3s | ",
+                              currentState.up ? "ON" : "OFF",
+                              currentState.down ? "ON" : "OFF",
+                              currentState.left ? "ON" : "OFF",
+                              currentState.right ? "ON" : "OFF");
+    
+                // Shoulder buttons and triggers
+                Serial.printf("SHLD: L1:%-3s R1:%-3s L2:%3d R2:%3d | ",
+                              currentState.l1 ? "ON" : "OFF",
+                              currentState.r1 ? "ON" : "OFF",
+                              currentState.l2,
+                              currentState.r2);
+    
+                // Thumbstick buttons (L3/R3)
+                Serial.printf("THUMB: L3:%-3s R3:%-3s | ",
+                              currentState.l3 ? "ON" : "OFF",
+                              currentState.r3 ? "ON" : "OFF");
+    
+                Serial.printf("JOY: LX:%4d LY:%4d RX:%4d RY:%4d | ",
+                              currentState.lx, currentState.ly, 
+                              currentState.rx, currentState.ry);
+    
+                Serial.printf("GYRO: X:%5d Y:%5d Z:%5d",
+                              currentState.gx, currentState.gy, currentState.gz);
+    
+                if (USE_ACCELEROMETER_VALUE) {
+                    Serial.printf(" | ACC: X:%5d Y:%5d Z:%5d",
+                                  currentState.ax, currentState.ay, currentState.az);
+                }
+    
+                Serial.println(); // End the line
             }
-
-            Serial.println(); // End the line
 
             // Update previous state
             prevState = currentState;
@@ -259,40 +269,43 @@ void PS4Remote::update() {
             upd || upu || dnd || dnu || ltd || ltu || rtd || rtu ||
             l1d || l1u || r1d || r1u || l3d || l3u || r3d || r3u) {
             
-            Serial.printf("EVENT: ");
-            // Face buttons
-            if (sqd) Serial.printf("SQUARE DOWN ");
-            if (squ) Serial.printf("SQUARE UP ");
-            if (trd) Serial.printf("TRIANGLE DOWN ");
-            if (tru) Serial.printf("TRIANGLE UP ");
-            if (crd) Serial.printf("CROSS DOWN ");
-            if (cru) Serial.printf("CROSS UP ");
-            if (cid) Serial.printf("CIRCLE DOWN ");
-            if (ciu) Serial.printf("CIRCLE UP ");
-
-            // D-pad
-            if (upd) Serial.printf("UP DOWN ");
-            if (upu) Serial.printf("UP UP ");
-            if (dnd) Serial.printf("DOWN DOWN ");
-            if (dnu) Serial.printf("DOWN UP ");
-            if (ltd) Serial.printf("LEFT DOWN ");
-            if (ltu) Serial.printf("LEFT UP ");
-            if (rtd) Serial.printf("RIGHT DOWN ");
-            if (rtu) Serial.printf("RIGHT UP ");
-
-            // Shoulder buttons
-            if (l1d) Serial.printf("L1 DOWN ");
-            if (l1u) Serial.printf("L1 UP ");
-            if (r1d) Serial.printf("R1 DOWN ");
-            if (r1u) Serial.printf("R1 UP ");
-
-            // Thumbstick buttons
-            if (l3d) Serial.printf("L3 DOWN ");
-            if (l3u) Serial.printf("L3 UP ");
-            if (r3d) Serial.printf("R3 DOWN ");
-            if (r3u) Serial.printf("R3 UP ");
-
-            Serial.println();
+            // Only print event debug data if enabled
+            if (DEBUG_PS4_DATA) {
+                Serial.printf("EVENT: ");
+                // Face buttons
+                if (sqd) Serial.printf("SQUARE DOWN ");
+                if (squ) Serial.printf("SQUARE UP ");
+                if (trd) Serial.printf("TRIANGLE DOWN ");
+                if (tru) Serial.printf("TRIANGLE UP ");
+                if (crd) Serial.printf("CROSS DOWN ");
+                if (cru) Serial.printf("CROSS UP ");
+                if (cid) Serial.printf("CIRCLE DOWN ");
+                if (ciu) Serial.printf("CIRCLE UP ");
+    
+                // D-pad
+                if (upd) Serial.printf("UP DOWN ");
+                if (upu) Serial.printf("UP UP ");
+                if (dnd) Serial.printf("DOWN DOWN ");
+                if (dnu) Serial.printf("DOWN UP ");
+                if (ltd) Serial.printf("LEFT DOWN ");
+                if (ltu) Serial.printf("LEFT UP ");
+                if (rtd) Serial.printf("RIGHT DOWN ");
+                if (rtu) Serial.printf("RIGHT UP ");
+    
+                // Shoulder buttons
+                if (l1d) Serial.printf("L1 DOWN ");
+                if (l1u) Serial.printf("L1 UP ");
+                if (r1d) Serial.printf("R1 DOWN ");
+                if (r1u) Serial.printf("R1 UP ");
+    
+                // Thumbstick buttons
+                if (l3d) Serial.printf("L3 DOWN ");
+                if (l3u) Serial.printf("L3 UP ");
+                if (r3d) Serial.printf("R3 DOWN ");
+                if (r3u) Serial.printf("R3 UP ");
+    
+                Serial.println();
+            }
         }
     }
 }
