@@ -4,11 +4,10 @@
 
 This project provides firmware for a tank-style robot controlled by a PS4 controller. It's designed to be educational, fun, and accessible for middle school students learning about robotics and programming.
 
-![Robot Tank Illustration](https://via.placeholder.com/800x400?text=Robot+Tank+Project)
-
 ## 📋 Overview
 
 The Tank-Firmware project allows you to control a two-motor robot using a PS4 controller. The robot uses "tank drive" style controls where:
+
 - Left joystick controls the left motor
 - Right joystick controls the right motor
 
@@ -17,10 +16,12 @@ This makes the robot easy to drive and understand - push both joysticks forward 
 ## 🎮 Controller Features
 
 ### Basic Controls
+
 - **Left Joystick**: Controls the left motor
 - **Right Joystick**: Controls the right motor
 
 ### Special Buttons
+
 - **Share Button**: Toggles smooth acceleration on/off
 - **Options Button**: Emergency stop (immediately stops all motors)
 - **D-pad Up**: Increase left motor power
@@ -39,6 +40,7 @@ This makes the robot easy to drive and understand - push both joysticks forward 
 ## 🔌 Wiring
 
 The default pin connections are:
+
 - Left Motor: Pins 18 (forward) and 19 (backward)
 - Right Motor: Pins 16 (forward) and 17 (backward)
 
@@ -49,6 +51,7 @@ You can change these in the `main.cpp` file if needed.
 You can easily customize how your robot works by changing settings in the `main.cpp` file:
 
 ### Controller Settings
+
 ```cpp
 #define EVENTS 1            // Track button press events
 #define BUTTONS 1           // Use controller buttons
@@ -58,11 +61,13 @@ You can easily customize how your robot works by changing settings in the `main.
 ```
 
 ### Joystick Sensitivity
+
 ```cpp
 #define DEADZONE 10         // How far to move joystick before robot responds
 ```
 
 ### Motor Settings
+
 ```cpp
 #define LEFT_MOTOR_CALIBRATION 1.0  // Left motor power factor
 #define RIGHT_MOTOR_CALIBRATION 1.0 // Right motor power factor
@@ -73,16 +78,19 @@ You can easily customize how your robot works by changing settings in the `main.
 ## 🚀 Getting Started
 
 1. **Setup the Hardware**:
+
    - Connect the motors to the motor driver
    - Connect the motor driver to the ESP32 using the pins defined in `main.cpp`
    - Power up the system
 
 2. **Upload the Firmware**:
+
    - Clone this repository
    - Open the project in PlatformIO or Arduino IDE
    - Upload the firmware to your ESP32
 
 3. **Connect the Controller**:
+
    - Turn on your PS4 controller
    - Press and hold the Share button and the PS button until the light bar flashes
    - The controller should connect to the ESP32 automatically
@@ -101,18 +109,22 @@ You can easily customize how your robot works by changing settings in the `main.
 ## 🛠️ Advanced Features
 
 ### Smooth Acceleration
+
 The robot can gradually speed up and slow down for smoother movement. Toggle this feature with the Share button on the controller.
 
 ### Motor Calibration
+
 If one motor is stronger than the other, you can adjust their relative power using the D-pad Up/Down (left motor) and Triangle/X buttons (right motor).
 
 ### Safety Features
+
 - Motors automatically stop if the controller disconnects
 - Emergency stop button (Options) immediately stops all motors
 
 ## 🔮 Future Enhancements
 
 Some ideas for expanding the project:
+
 - Add sensors for obstacle detection
 - Implement autonomous navigation modes
 - Add LED indicators or a small display
@@ -121,6 +133,7 @@ Some ideas for expanding the project:
 ## 📚 Learning Opportunities
 
 This project helps students learn about:
+
 - Programming concepts (variables, functions, conditionals)
 - Electronics and circuit connections
 - Wireless communication (Bluetooth)
